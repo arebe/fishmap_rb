@@ -44,7 +44,7 @@ var projectionMethods = [
         method: d3.geo.azimuthalEqualArea().clipAngle(180 - 1e-3).scale(237).translate([width / 2, height / 2])//.precision(.1)
     },{
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 100, height / 2]).rotate([200, 0]).precision(.01)
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +50]).rotate([-180, 0]).scale(400).precision(.01)
     },
     {
         name: "equirectangular Pacific",
@@ -52,44 +52,73 @@ var projectionMethods = [
     }
 ]
 
-var actualProjectionMethod = 5
+var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([1, 10])
 
-// load map data and display
-d3.json("../data/ne_50m_coastline.json", function(error, data) {
-    var worldMap = topojson.feature(data,data.objects.ne_50m_coastline).features
-    var countries = svg.append("g")
-        .attr("id", "country")
-        .selectAll("path")
-        .data(worldMap)
-        .enter()
-        .append("path")
-        .attr({
-            d: path,
-        })
-        .style({
-            stroke: "white", 
-            fill: "darkolivegreen",
-        })
-
-    // label projection on map
-    var textLabel = svg.append("text")
-          .text(projectionMethods[actualProjectionMethod].name)
-          .attr({
-            "transform":"translate(-40,-30)"
-          })
-          .style("fill", "white")
-
-    loadData()
+// once page has loaded, display the map
+$(document).ready(function(){
+    displayMap()
+    d3.select("body").append("button").text("changePro").on({
+    "click":changePro
 })
+})
+
+var changePro = function(){
+    if (actualProjectionMethod === 4) {
+        actualProjectionMethod = 5
+    }
+    else if(actualProjectionMethod === 5){
+        actualProjectionMethod = 4
+    }
+    else{
+        console.log("wtf: ", actualProjectionMethod)
+    }
+    projection =  projectionMethods[actualProjectionMethod].method
+    path = d3.geo.path().projection(projection)
+    $("#coastline").remove()
+    svg.selectAll(".reading").attr({transform: function(d){
+                return "translate(" + d.coordinates + ")"
+            },})
+    displayMap()
+}
+
+// load map data and display
+function displayMap(){
+    d3.json("../data/ne_50m_coastline.json", function(error, data) {
+        var worldMap = topojson.feature(data,data.objects.ne_50m_coastline).features
+        var coastline = svg.append("g")
+            .attr("id", "coastline")
+            .selectAll("path")
+            .data(worldMap)
+            .enter()
+            .append("path")
+            .attr({
+                d: path,
+            })
+            .style({
+                stroke: "none", 
+                fill: "darkolivegreen",
+            })
+
+        // label projection on map
+        var textLabel = svg.append("text")
+              .text(projectionMethods[actualProjectionMethod].name)
+              .attr({
+                "transform":"translate(-40,-30)"
+              })
+              .style("fill", "white")
+        loadData()
+    })
+}
+
 
 var csData = []
 
 function loadData(){
     d3.csv("../data/CLIVAR_profile_Cs.csv", function(error, data){
-        console.log("data: ", data)
+        // console.log("data: ", data)
         var cs137Min = 0
         var cs137Max = 0
         data.forEach(function(d){
@@ -110,7 +139,7 @@ function loadData(){
 
             }
         })
-        console.log("csData: ", csData)
+        // console.log("csData: ", csData)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         drawCircles(csData)
