@@ -44,20 +44,22 @@ var projectionMethods = [
         method: d3.geo.azimuthalEqualArea().clipAngle(180 - 1e-3).scale(237).translate([width / 2, height / 2])//.precision(.1)
     },{
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([width / 2, height / 2]).rotate([-155, 0]).precision(9)
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 100, height / 2]).rotate([200, 0]).precision(.01)
     },
     {
         name: "equirectangular Pacific",
-        method: d3.geo.equirectangular().translate([width / 2, height / 2]).rotate([-155, 0]).precision(9)
+        method: d3.geo.equirectangular().translate([(width / 2) - 100, height / 2]).rotate([-160, 0]).scale(280).precision(.01)
     }
 ]
 
 var actualProjectionMethod = 5
-var path = d3.geo.path().projection(projectionMethods[actualProjectionMethod].method)
+var projection =  projectionMethods[actualProjectionMethod].method
+var path = d3.geo.path().projection(projection)
+var rScale = d3.scale.linear().range([1, 10])
 
 // load map data and display
-d3.json("../data/world_data_topo.json", function(error, data) {
-    var worldMap = topojson.feature(data,data.objects.world_data).features
+d3.json("../data/ne_50m_coastline.json", function(error, data) {
+    var worldMap = topojson.feature(data,data.objects.ne_50m_coastline).features
     var countries = svg.append("g")
         .attr("id", "country")
         .selectAll("path")
@@ -69,12 +71,68 @@ d3.json("../data/world_data_topo.json", function(error, data) {
         })
         .style({
             stroke: "white", 
-            fill: "steelblue",
+            fill: "darkolivegreen",
         })
 
+    // label projection on map
+    var textLabel = svg.append("text")
+          .text(projectionMethods[actualProjectionMethod].name)
+          .attr({
+            "transform":"translate(-40,-30)"
+          })
+          .style("fill", "white")
+
+    loadData()
 })
 
-// label projection on map
-var textLabel = svg.append("text").text(projectionMethods[actualProjectionMethod].name).attr({
-    "transform":"translate(-40,-30)"
-})
+var csData = []
+
+function loadData(){
+    d3.csv("../data/CLIVAR_profile_Cs.csv", function(error, data){
+        console.log("data: ", data)
+        var cs137Min = 0
+        var cs137Max = 0
+        data.forEach(function(d){
+            if(projection([d['Longitude'], d['Latitude']])){
+                csData.push({
+                    source: "CLIVAR",
+                    coordinates: projection([d['Longitude'], d['Latitude']]),
+                    cs134: d['Cs134 (Bq/m^3)'],
+                    cs137: d['Cs137 (Bq/m^3)'],
+                    date: d['Date'],
+                })
+                if(d['Cs137 (Bq/m^3)'] < cs137Min){
+                    cs137Min = d['Cs137 (Bq/m^3)']
+                }
+                if(d['Cs137 (Bq/m^3)'] > cs137Max){
+                    cs137Max = d['Cs137 (Bq/m^3)']
+                }
+
+            }
+        })
+        console.log("csData: ", csData)
+        // update circle radius scale
+        rScale.domain([cs137Min, cs137Max])
+        drawCircles(csData)
+    })
+}
+
+function drawCircles(data){
+    var readings = svg.append("g")
+        .attr("id", "readings")
+        .selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("class", "reading")
+        .attr({
+            transform: function(d){
+                return "translate(" + d.coordinates + ")"
+            },
+            r: function(d){ return rScale(d.cs137) },
+        })
+        .style({
+            fill: "darkblue",
+            stroke: "none"
+        })
+}
