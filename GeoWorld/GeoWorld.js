@@ -18,8 +18,6 @@ var bbVis = {
     h: 300
 }
 
-var dataSet = {}
-
 // attach svg object to the DOM
 var svg = d3.select("#vis").append("svg").attr({
     width: width + margin.left + margin.right,
@@ -52,6 +50,7 @@ var projectionMethods = [
     }
 ]
 
+// base map parameters
 var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path = d3.geo.path().projection(projection)
@@ -60,11 +59,10 @@ var rScale = d3.scale.linear().range([1, 10])
 // once page has loaded, display the map
 $(document).ready(function(){
     displayMap()
-    d3.select("body").append("button").text("changePro").on({
-    "click":changePro
-})
+    // d3.select("body").append("button").text("changePro").on({"click":changePro})
 })
 
+// change the projection interactively --- under development!
 var changePro = function(){
     if (actualProjectionMethod === 4) {
         actualProjectionMethod = 5
@@ -113,33 +111,32 @@ function displayMap(){
     })
 }
 
-
+// cesium data loaded into an array
 var csData = []
+var fukushimaCoord = projection([141.0329, 37.4230])
 
 function loadData(){
-    d3.csv("../data/CLIVAR_profile_Cs.csv", function(error, data){
-        // console.log("data: ", data)
+    d3.json("../data/allCsData.json", function(error, data){
         var cs137Min = 0
         var cs137Max = 0
         data.forEach(function(d){
-            if(projection([d['Longitude'], d['Latitude']])){
-                csData.push({
-                    source: "CLIVAR",
-                    coordinates: projection([d['Longitude'], d['Latitude']]),
-                    cs134: d['Cs134 (Bq/m^3)'],
-                    cs137: d['Cs137 (Bq/m^3)'],
-                    date: d['Date'],
-                })
-                if(d['Cs137 (Bq/m^3)'] < cs137Min){
-                    cs137Min = d['Cs137 (Bq/m^3)']
-                }
-                if(d['Cs137 (Bq/m^3)'] > cs137Max){
-                    cs137Max = d['Cs137 (Bq/m^3)']
-                }
-
+            csData.push({
+                source: d['source'],
+                coordinates: projection([d.coordinates[0], d.coordinates[1]]),
+                cs134: d['cs134'],
+                cs137: d['cs137'],
+                date: d['date'],
+                temp: d['temp'],
+                salinity: d['salinity'],
+                depth: d['depth']
+            })
+            if(d['cs137'] < cs137Min){
+                cs137Min = d['cs137']
+            }
+            if(d['cs137'] > cs137Max){
+                cs137Max = d['cs137']
             }
         })
-        // console.log("csData: ", csData)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         drawCircles(csData)
@@ -147,12 +144,51 @@ function loadData(){
 }
 
 function drawCircles(data){
+    var fukushima = svg.append("g")
+        .attr("id", "fukushima")
+        .append("circle")
+        .attr({
+            transform: "translate(" + fukushimaCoord + ")",
+            r: "5",
+        })
+        .style({
+            fill: "orange",
+            stroke: "darkred",
+            "stroke-width": "3",
+        })
+    //-- concentric circles emanating from a point from: http://bl.ocks.org/mbostock/4503672
+    setInterval(function(){
+        svg.append("circle")
+           .attr({
+            class: "ring",
+            transform: "translate(" + fukushimaCoord + ")",
+            r: "10",
+           })
+           .style({
+            "stroke-width": 3,
+            stroke: "darkred",
+           })
+           .transition()
+           .ease("linear")
+           .duration(2000)
+           .style({
+            fill: "none",
+            "stroke-opacity": "1e-6",
+            "stroke-width": 1,
+            stroke: "brown"
+           })
+           .attr("r", 50)
+           .remove()
+       }, 1200)
+    //---------------------------------------------------------------------//
+
     var readings = svg.append("g")
         .attr("id", "readings")
         .selectAll("circle")
         .data(data)
         .enter()
         .append("circle")
+        .filter(function(d){ return d.cs137 > 0 })
         .attr("class", "reading")
         .attr({
             transform: function(d){

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cs Data Aggregation</title>
+</head>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script type="text/javascript" src="../libs/jquery-1.11.0.min.js"></script>
+<script src="../libs/FileSaver.js"></script>
+
+<div id="vis"></div>
+
+
+<script>
+    // queue for asynchronous file loading
+    var q = queue()
+    // dataset to hold all Cs data
+    var csData = []
+    // parse time to...hours? change to something more sensible
+    var timeParser = d3.time.format("%-H")
+
+    queue().defer(d3.csv, "../csv_hydrography_cs/CLIVAR_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/CLIVAR_mld_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/DaisanKaiyo_profile_Cs.csv")
+         .await(processData)
+    
+    function processData(error, data1, data2, data3){
+            data1.forEach(function(d){
+                if(d['Longitude'] && d['Latitude']){
+                    csData.push({
+                        source: "CLIVAR_profile",
+                        coordinates: [d['Longitude'], d['Latitude']],
+                        cs134: d['Cs134 (Bq/m^3)'],
+                        cs137: d['Cs137 (Bq/m^3)'],
+                        date: d['Date'],
+                        temp: d['Temperature'],
+                        salinity: d['Salinity'],
+                        depth: d['depth']
+                    })
+                }
+            })
+            data2.forEach(function(d){
+                if(d['Longitude'] && d['Latitude']){
+                    csData.push({
+                        source: "CLIVAR_mld",
+                        coordinates: [d['Longitude'], d['Latitude']],
+                        cs134: d['Cs134 (Bq/m^3)'],
+                        cs137: d['Cs137 (Bq/m^3)'],
+                        date: d['Date'],
+                        temp: d['Temperature'],
+                        salinity: d['Salinity'],
+                        depth: d['depth']
+                    })
+                }
+            })
+            data3.forEach(function(d){
+                if(d['Longitude'] && d['Latitude']){
+                    csData.push({
+                        source: "DaisanKaiyo_profile",
+                        coordinates: [d['Longitude'], d['Latitude']],
+                        cs134: d['Cs134 (Bq/m^3)'],
+                        cs137: d['Cs137 (Bq/m^3)'],
+                        date: d['Date'],
+                        temp: d['Temperature'],
+                        salinity: d['Salinity'],
+                        depth: d['depth']
+                    })
+                }
+            })
+            console.log("csData: ", csData)
+            saveToFile(csData,"allCsData.json")
+            
+        }
+  
+    var saveToFile = function(object, filename){
+        var blob, blobText
+        blobText = [JSON.stringify(object)]
+        blob = new Blob(blobText, {
+            type: "text/plain;charset=utf-8"
+        })
+        saveAs(blob, filename)
+    }
+
+
+</script>
+
+
+</body>
+</html>
