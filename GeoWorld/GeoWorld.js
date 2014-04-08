@@ -54,7 +54,7 @@ var projectionMethods = [
 var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path = d3.geo.path().projection(projection)
-var rScale = d3.scale.linear().range([1, 10])
+var rScale = d3.scale.linear().range([1, 15])
 
 // once page has loaded, display the map
 $(document).ready(function(){
@@ -124,7 +124,7 @@ function loadData(){
                 source: d['source'],
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
                 cs134: d['cs134'],
-                cs137: d['cs137'],
+                cs137: +d['cs137'],
                 date: d['date'],
                 temp: d['temp'],
                 salinity: d['salinity'],
@@ -136,25 +136,50 @@ function loadData(){
             if(d['cs137'] > cs137Max){
                 cs137Max = d['cs137']
             }
+            console.log("cs137: ", d['cs137'])
         })
         // update circle radius scale
+        console.log("cs137Max: ", cs137Max)
+        console.log("scaled cs137Max: ", rScale(cs137Max))
         rScale.domain([cs137Min, cs137Max])
         drawCircles(csData)
     })
 }
 
 function drawCircles(data){
+
+
+    var readings = svg.append("g")
+        .attr("id", "readings")
+        .selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .filter(function(d){ return d.cs137 > 0 })
+        // .filter(function(d){ return d.source === "KOK_sink" })
+        .attr("class", "reading")
+        .attr({
+            transform: function(d){
+                return "translate(" + d.coordinates + ")"
+            },
+            r: function(d){ return rScale(d.cs137) },
+        })
+        .style({
+            fill: "darkblue",
+            stroke: "none"
+        })
+
     var fukushima = svg.append("g")
         .attr("id", "fukushima")
         .append("circle")
         .attr({
             transform: "translate(" + fukushimaCoord + ")",
-            r: "5",
+            r: "3",
         })
         .style({
             fill: "orange",
             stroke: "darkred",
-            "stroke-width": "3",
+            "stroke-width": "2",
         })
     //-- concentric circles emanating from a point from: http://bl.ocks.org/mbostock/4503672
     setInterval(function(){
@@ -181,23 +206,4 @@ function drawCircles(data){
            .remove()
        }, 1200)
     //---------------------------------------------------------------------//
-
-    var readings = svg.append("g")
-        .attr("id", "readings")
-        .selectAll("circle")
-        .data(data)
-        .enter()
-        .append("circle")
-        .filter(function(d){ return d.cs137 > 0 })
-        .attr("class", "reading")
-        .attr({
-            transform: function(d){
-                return "translate(" + d.coordinates + ")"
-            },
-            r: function(d){ return rScale(d.cs137) },
-        })
-        .style({
-            fill: "darkblue",
-            stroke: "none"
-        })
 }
