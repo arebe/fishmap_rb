@@ -29,10 +29,21 @@
          .defer(d3.csv, "../csv_hydrography_cs/Emerson_surface_Cs.csv")
          .defer(d3.csv, "../csv_hydrography_cs/KOK_profile_Cs.csv")
          .defer(d3.csv, "../csv_hydrography_cs/KOK_sink_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/KOK_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Mirai2011_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Mirai2012_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/SEA_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/SeaDragon_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Tanseimaru_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Tanseimaru_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/UCSB_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Umitakamaru_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Umitakamaru_surface_Cs.csv")
          .await(processData)
     
     function processData(error, data1, data2, data3, data4, data5, data6, 
-        data7, data8){
+        data7, data8, data9, data10, data11, data12, data13, data14, data15,
+        data16, data17, data18){
 
         var datasets = [{name: "CLIVAR_profile", data: data1},
                         {name: "CLIVAR_mld", data: data2},
@@ -42,6 +53,16 @@
                         {name: "Emerson_surface", data: data6},
                         {name: "KOK_profile", data: data7},
                         {name: "KOK_sink", data: data8},
+                        {name: "KOK_surface", data: data9},
+                        {name: "Mirai2011_all", data: data10},
+                        {name: "Mirai2012_all", data: data11},
+                        {name: "SEA_all", data: data12},
+                        {name: "SeaDragon_all", data: data13},
+                        {name: "Tanseimaru_profile", data: data14},
+                        {name: "Tanseimaru_surface", data: data15},
+                        {name: "UCSB_all", data: data16},
+                        {name: "Umitakamaru_profile", data: data17},
+                        {name: "Umitakamaru_surface", data: data18},
         ]
 
         for(var i = 0; i < datasets.length; i++){

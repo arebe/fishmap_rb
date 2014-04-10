@@ -51,10 +51,10 @@ var projectionMethods = [
 ]
 
 // base map parameters
-var actualProjectionMethod = 5
+var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path = d3.geo.path().projection(projection)
-var rScale = d3.scale.linear().range([1, 15])
+var rScale = d3.scale.linear().range([2, 15])
 
 // once page has loaded, display the map
 $(document).ready(function(){
@@ -117,11 +117,11 @@ var fukushimaCoord = projection([141.0329, 37.4230])
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
-        console.log("json data: ", data)
         var cs137Min = 0
         var cs137Max = 0
+        // this is super janky - need to find a better solution than all these parseFloats..
         data.forEach(function(d){
-            console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
+            // console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
             csData.push({
                 source: d['source'],
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
@@ -140,8 +140,6 @@ function loadData(){
             } 
         })
         // update circle radius scale
-        console.log("cs137Max: ", cs137Max)
-        console.log("scaled cs137Max: ", rScale(cs137Max))
         rScale.domain([cs137Min, cs137Max])
         drawCircles(csData)
     })
@@ -156,7 +154,6 @@ function drawCircles(data){
         .enter()
         .append("circle")
         .filter(function(d){ return d.cs137 > 0 })
-        // .filter(function(d){ return d.source === "KOK_sink" })
         .attr("class", "reading")
         .attr({
             transform: function(d){
