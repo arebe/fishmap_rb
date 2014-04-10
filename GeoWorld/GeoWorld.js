@@ -51,7 +51,7 @@ var projectionMethods = [
 ]
 
 // base map parameters
-var actualProjectionMethod = 4
+var actualProjectionMethod = 5
 var projection =  projectionMethods[actualProjectionMethod].method
 var path = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([1, 15])
@@ -117,17 +117,19 @@ var fukushimaCoord = projection([141.0329, 37.4230])
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
+        console.log("json data: ", data)
         var cs137Min = 0
         var cs137Max = 0
         data.forEach(function(d){
+            // console.log("cs137: ", d['cs137'])
             csData.push({
                 source: d['source'],
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
                 cs134: d['cs134'],
-                cs137: +d['cs137'],
+                cs137: d['cs137'],
                 date: d['date'],
                 temp: d['temp'],
-                salinity: d['salinity'],
+                salinity: parseFloat(d['salinity']),
                 depth: d['depth']
             })
             if(d['cs137'] < cs137Min){
@@ -135,8 +137,7 @@ function loadData(){
             }
             if(d['cs137'] > cs137Max){
                 cs137Max = d['cs137']
-            }
-            console.log("cs137: ", d['cs137'])
+            } 
         })
         // update circle radius scale
         console.log("cs137Max: ", cs137Max)
@@ -147,7 +148,6 @@ function loadData(){
 }
 
 function drawCircles(data){
-
 
     var readings = svg.append("g")
         .attr("id", "readings")

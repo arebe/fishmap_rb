@@ -33,123 +33,39 @@
     
     function processData(error, data1, data2, data3, data4, data5, data6, 
         data7, data8){
-            data1.forEach(function(d){
+
+        var datasets = [{name: "CLIVAR_profile", data: data1},
+                        {name: "CLIVAR_mld", data: data2},
+                        {name: "DaisanKaiyo_profile", data: data3},
+                        {name: "DaisanKaiyo_surface", data: data4},
+                        {name: "Emerson_profile", data: data5},
+                        {name: "Emerson_surface", data: data6},
+                        {name: "KOK_profile", data: data7},
+                        {name: "KOK_sink", data: data8},
+        ]
+
+        for(var i = 0; i < datasets.length; i++){
+            var thisData = datasets[i].data
+            thisData.forEach(function(d){
                 if(d['Longitude'] && d['Latitude']){
                     csData.push({
-                        source: "CLIVAR_profile",
+                        source: datasets[i].name,
                         coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: d['Cs134 (Bq/m^3)'],
-                        cs137: d['Cs137 (Bq/m^3)'],
+                        cs134: parseFloat(d['Cs134 (Bq/m^3)'].replace(/,/g,'')),
+                        cs137: parseFloat(d['Cs137 (Bq/m^3)'].replace(/,/g,'')),
                         date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data2.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "CLIVAR_mld",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: d['Cs134 (Bq/m^3)'],
-                        cs137: d['Cs137 (Bq/m^3)'],
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data3.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "DaisanKaiyo_profile",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data4.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "DaisanKaiyo_surface",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data5.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "Emerson_profile",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data6.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "Emerson_surface",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data7.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "KOK_profile",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
-                    })
-                }
-            })
-            data8.forEach(function(d){
-                if(d['Longitude'] && d['Latitude']){
-                    csData.push({
-                        source: "KOK_sink",
-                        coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)']),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)']),
-                        date: d['Date'],
-                        temp: d['Temperature'],
-                        salinity: d['Salinity'],
-                        depth: d['depth']
+                        temp: parseFloat(d['Temperature'].replace(/,/g,'')),
+                        salinity: parseFloat(d['Salinity'].replace(/,/g,'')),
+                        depth: parseFloat(d['depth'].replace(/,/g,''))
                     })
                 }
             })
 
-            console.log("csData: ", csData)
-            saveToFile(csData,"allCsData.json")
-            
         }
+       console.log("csData: ", csData)
+       saveToFile(csData,"allCsData.json")
+            
+    }
   
     var saveToFile = function(object, filename){
         var blob, blobText
