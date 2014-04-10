@@ -51,12 +51,12 @@
                     csData.push({
                         source: datasets[i].name,
                         coordinates: [d['Longitude'], d['Latitude']],
-                        cs134: parseFloat(d['Cs134 (Bq/m^3)'].replace(/,/g,'')),
-                        cs137: parseFloat(d['Cs137 (Bq/m^3)'].replace(/,/g,'')),
+                        cs134: d['Cs134 (Bq/m^3)'],
+                        cs137: d['Cs137 (Bq/m^3)'],
                         date: d['Date'],
-                        temp: parseFloat(d['Temperature'].replace(/,/g,'')),
-                        salinity: parseFloat(d['Salinity'].replace(/,/g,'')),
-                        depth: parseFloat(d['depth'].replace(/,/g,''))
+                        temp: d['Temperature'],
+                        salinity: d['Salinity'],
+                        depth: d['depth']
                     })
                 }
             })
@@ -69,7 +69,7 @@
   
     var saveToFile = function(object, filename){
         var blob, blobText
-        blobText = [JSON.stringify(object)]
+        blobText = [JSON.stringify(object, null, 4)]
         blob = new Blob(blobText, {
             type: "text/plain;charset=utf-8"
         })

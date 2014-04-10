@@ -121,22 +121,22 @@ function loadData(){
         var cs137Min = 0
         var cs137Max = 0
         data.forEach(function(d){
-            // console.log("cs137: ", d['cs137'])
+            console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
             csData.push({
                 source: d['source'],
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
                 cs134: d['cs134'],
-                cs137: d['cs137'],
+                cs137: parseFloat(d['cs137'].replace(/,/g,'')),
                 date: d['date'],
                 temp: d['temp'],
-                salinity: parseFloat(d['salinity']),
+                salinity: d['salinity'],
                 depth: d['depth']
             })
-            if(d['cs137'] < cs137Min){
-                cs137Min = d['cs137']
+            if(parseFloat(d['cs137'].replace(/,/g,'')) < cs137Min){
+                cs137Min = parseFloat(d['cs137'].replace(/,/g,''))
             }
-            if(d['cs137'] > cs137Max){
-                cs137Max = d['cs137']
+            if(parseFloat(d['cs137'].replace(/,/g,'')) > cs137Max){
+                cs137Max = parseFloat(d['cs137'].replace(/,/g,''))
             } 
         })
         // update circle radius scale
