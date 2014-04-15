@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cs Data Aggregation</title>
+</head>
+<body>
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="http://d3js.org/queue.v1.min.js"></script>
+<script src="http://d3js.org/topojson.v1.min.js"></script>
+<script type="text/javascript" src="../libs/jquery-1.11.0.min.js"></script>
+<script src="../libs/FileSaver.js"></script>
+
+<div id="vis"></div>
+
+
+<script>
+    // queue for asynchronous file loading
+    var q = queue()
+    // dataset to hold all Cs data
+    var csData = []
+    // parse time to...hours? change to something more sensible
+    var timeParser = d3.time.format("%-H")
+
+    queue().defer(d3.csv, "../csv_hydrography_cs/CLIVAR_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/CLIVAR_mld_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/DaisanKaiyo_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/DaisanKaiyo_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Emerson_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Emerson_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/KOK_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/KOK_sink_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/KOK_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Mirai2011_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Mirai2012_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/SEA_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/SeaDragon_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Tanseimaru_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Tanseimaru_surface_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/UCSB_Cs_all.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Umitakamaru_profile_Cs.csv")
+         .defer(d3.csv, "../csv_hydrography_cs/Umitakamaru_surface_Cs.csv")
+         .await(processData)
+    
+    function processData(error, data1, data2, data3, data4, data5, data6, 
+        data7, data8, data9, data10, data11, data12, data13, data14, data15,
+        data16, data17, data18){
+
+        var datasets = [{name: "CLIVAR_profile", data: data1},
+                        {name: "CLIVAR_mld", data: data2},
+                        {name: "DaisanKaiyo_profile", data: data3},
+                        {name: "DaisanKaiyo_surface", data: data4},
+                        {name: "Emerson_profile", data: data5},
+                        {name: "Emerson_surface", data: data6},
+                        {name: "KOK_profile", data: data7},
+                        {name: "KOK_sink", data: data8},
+                        {name: "KOK_surface", data: data9},
+                        {name: "Mirai2011_all", data: data10},
+                        {name: "Mirai2012_all", data: data11},
+                        {name: "SEA_all", data: data12},
+                        {name: "SeaDragon_all", data: data13},
+                        {name: "Tanseimaru_profile", data: data14},
+                        {name: "Tanseimaru_surface", data: data15},
+                        {name: "UCSB_all", data: data16},
+                        {name: "Umitakamaru_profile", data: data17},
+                        {name: "Umitakamaru_surface", data: data18},
+        ]
+
+        for(var i = 0; i < datasets.length; i++){
+            var thisData = datasets[i].data
+            thisData.forEach(function(d){
+                if(d['Longitude'] && d['Latitude']){
+                    csData.push({
+                        source: datasets[i].name,
+                        coordinates: [d['Longitude'], d['Latitude']],
+                        cs134: d['Cs134 (Bq/m^3)'],
+                        cs137: d['Cs137 (Bq/m^3)'],
+                        date: d['Date'],
+                        temp: d['Temperature'],
+                        salinity: d['Salinity'],
+                        depth: d['depth']
+                    })
+                }
+            })
+
+        }
+       console.log("csData: ", csData)
+       saveToFile(csData,"allCsData.json")
+            
+    }
+  
+    var saveToFile = function(object, filename){
+        var blob, blobText
+        blobText = [JSON.stringify(object, null, 4)]
+        blob = new Blob(blobText, {
+            type: "text/plain;charset=utf-8"
+        })
+        saveAs(blob, filename)
+    }
+
+
+</script>
+
+
+</body>
+</html>
