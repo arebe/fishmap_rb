@@ -70,7 +70,11 @@ var rScale = d3.scale.linear().range([2, 15])
 
 // slider & bar chart params
 var parseDate = d3.time.format("%m/%e/%y").parse
+var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
+var transScale = d3.scale.linear().range([0, 0.9])
+var one_day = 1000*60*60*24
+transScale.domain([60*one_day, 0])
 
 // once page has loaded, display the map
 $(document).ready(function(){
@@ -234,12 +238,12 @@ function drawSlider(){
     svg_map.append("g")
            .attr({
             class: "x axis",
-            transform: "translate(" + margin.left + "," + height + ")",
+            transform: "translate(" + margin.left + "," + (height - margin.bottom) + ")",
            })
            .call(d3.svg.axis()
               .scale(slider_x)
               .orient("bottom")
-              .tickFormat(function(d){ return d })
+              .tickFormat(function(d){ return formatDate(d) })
               .tickSize(0)
               .tickPadding(12))
            .select(".domain")
@@ -256,7 +260,7 @@ function drawSlider(){
     var handle = slider.append("circle")
         .attr({
             class: "handle",
-            transform: "translate(" + margin.left + "," + height + ")",
+            transform: "translate(" + margin.left + "," + (height - margin.bottom) + ")",
             r: 9,
         })
 
@@ -275,6 +279,6 @@ function drawSlider(){
         }
 
         handle.attr("cx", slider_x(value))
-        d3.select("body").style("background-color", d3.hsl(value, .8, .8))
+        d3.selectAll(".reading").attr("opacity", function(d){ return transScale(Math.abs(value - d.date)) })
     }
 }
