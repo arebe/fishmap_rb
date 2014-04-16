@@ -1,5 +1,3 @@
-/* originally HW4, GeoWorld.js */
-
 // create D3 visualization viewport parameters
 var margin = {
     top: 50,
@@ -33,7 +31,6 @@ svg_map.append("rect")
     width: "100%",
     height: "100%",
     fill: "aliceblue",
-
    })
 
 svg_map.append("g").attr({
@@ -70,6 +67,10 @@ var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([2, 15])
+
+// slider & bar chart params
+var parseDate = d3.time.format("%m/%e/%y").parse
+var slider_x = d3.time.scale().range([0, width]).clamp(true)
 
 // once page has loaded, display the map
 $(document).ready(function(){
@@ -142,7 +143,7 @@ function loadData(){
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
                 cs134: d['cs134'],
                 cs137: parseFloat(d['cs137'].replace(/,/g,'')),
-                date: d['date'],
+                date: parseDate(d['date']),
                 temp: d['temp'],
                 salinity: d['salinity'],
                 depth: d['depth']
@@ -154,9 +155,14 @@ function loadData(){
                 cs137Max = parseFloat(d['cs137'].replace(/,/g,''))
             } 
         })
+        console.log("csData: ", csData)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
+        // update slider scale
+        slider_x.domain(d3.extent(csData, function(d){ return d.date }))
+        // display data on map
         drawCircles(csData)
+        drawSlider()
     })
 }
 
@@ -175,10 +181,12 @@ function drawCircles(data){
                 return "translate(" + d.coordinates + ")"
             },
             r: function(d){ return rScale(d.cs137) },
+            "fill-opacity": 0.3,
+            "stroke-opacity": 1,
         })
         .style({
             fill: "darkblue",
-            stroke: "none"
+            stroke: "darkblue"
         })
 
     var fukushima = svg_map.append("g")
@@ -218,4 +226,55 @@ function drawCircles(data){
            .remove()
        }, 1200)
     //---------------------------------------------------------------------//
+}
+
+function drawSlider(){
+    //-- borrowed from http://bl.ocks.org/mbostock/6452972 ---//
+    var brush = d3.svg.brush().x(slider_x).extent([0,0]).on("brush", brushed)
+    svg_map.append("g")
+           .attr({
+            class: "x axis",
+            transform: "translate(" + margin.left + "," + height + ")",
+           })
+           .call(d3.svg.axis()
+              .scale(slider_x)
+              .orient("bottom")
+              .tickFormat(function(d){ return d })
+              .tickSize(0)
+              .tickPadding(12))
+           .select(".domain")
+           .select(function(){ return this.parentNode.appendChild(this.cloneNode(true)) })
+           .attr("class", "halo")
+
+    var slider = svg_map.append("g")
+        .attr("class", "slider")
+        .call(brush)
+
+    slider.selectAll(".background")
+          .attr("height", height)
+
+    var handle = slider.append("circle")
+        .attr({
+            class: "handle",
+            transform: "translate(" + margin.left + "," + height + ")",
+            r: 9,
+        })
+
+    slider.call(brush.event)
+          .transition()
+          .duration(750)
+          .call(brush.extent([70, 70]))
+          .call(brush.event)
+
+    function brushed(){
+        var value = brush.extent()[0]
+
+        if(d3.event.sourceEvent){
+            value = slider_x.invert(d3.mouse(this)[0])
+            brush.extent([value, value])
+        }
+
+        handle.attr("cx", slider_x(value))
+        d3.select("body").style("background-color", d3.hsl(value, .8, .8))
+    }
 }
