@@ -72,9 +72,12 @@ var rScale = d3.scale.linear().range([2, 15])
 var parseDate = d3.time.format("%m/%e/%y").parse
 var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
-var transScale = d3.scale.linear().range([0, 0.9])
-var one_day = 1000*60*60*24
-transScale.domain([60*one_day, 0])
+// circle transparency scales
+var fillOpScale = d3.scale.linear().range([0, 0.5])
+var strokeOpScale = d3.scale.linear().range([0, 1])
+var one_day = 1000*60*60*24   // in milliseconds
+fillOpScale.domain([90*one_day, 0])
+strokeOpScale.domain([90*one_day, 0])
 
 // once page has loaded, display the map
 $(document).ready(function(){
@@ -185,8 +188,6 @@ function drawCircles(data){
                 return "translate(" + d.coordinates + ")"
             },
             r: function(d){ return rScale(d.cs137) },
-            "fill-opacity": 0.3,
-            "stroke-opacity": 1,
         })
         .style({
             fill: "darkblue",
@@ -267,7 +268,7 @@ function drawSlider(){
     slider.call(brush.event)
           .transition()
           .duration(750)
-          .call(brush.extent([70, 70]))
+          .call(brush.extent([0, 0]))
           .call(brush.event)
 
     function brushed(){
@@ -279,6 +280,9 @@ function drawSlider(){
         }
 
         handle.attr("cx", slider_x(value))
-        d3.selectAll(".reading").attr("opacity", function(d){ return transScale(Math.abs(value - d.date)) })
+        d3.selectAll(".reading").attr({
+            "fill-opacity": function(d){ return fillOpScale(Math.abs(value - d.date)) },
+            "stroke-opacity": function(d){ return strokeOpScale(Math.abs(value - d.date)) }
+        })
     }
 }
