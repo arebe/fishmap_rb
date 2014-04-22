@@ -79,9 +79,9 @@ var one_day = 1000*60*60*24   // in milliseconds
 fillOpScale.domain([90*one_day, 0])
 strokeOpScale.domain([90*one_day, 0])
 
-// once page has loaded, display the map
+// once page has loaded, display the map ** do we need this still? **//
 $(document).ready(function(){
-    displayMap()
+    // displayMap()
     // d3.select("body").append("button").text("changePro").on({"click":changePro})
 })
 
@@ -106,13 +106,17 @@ var changePro = function(){
 }
 
 // load map data and display
-function displayMap(){
-    d3.json("../data/ne_50m_coastline.json", function(error, data) {
-        var worldMap = topojson.feature(data,data.objects.ne_50m_coastline).features
+queue().defer(d3.json, "../data/ne_50m_coastline.json")
+       .defer(d3.json, "../data/ne_50m_populated_places.json")
+       .await(displayMap)
+
+function displayMap(error, coastline_data, cities_data){
+        var worldCoasts = topojson.feature(coastline_data,coastline_data.objects.ne_50m_coastline).features
+        var worldCities = topojson.feature(cities_data, cities_data.objects.ne_50m_populated_places).features
         var coastline = svg_map.append("g")
             .attr("id", "coastline")
             .selectAll("path")
-            .data(worldMap)
+            .data(worldCoasts)
             .enter()
             .append("path")
             .attr({
@@ -122,6 +126,61 @@ function displayMap(){
                 stroke: "none", 
                 fill: "darkolivegreen",
             })
+        // city markers
+        var cities = svg_map.append("g")
+            .attr("id", "cities")
+            .selectAll("path")
+            .data(worldCities)
+            .enter()
+            .append("circle")
+            .filter(function(d){
+                return d.properties.SCALERANK <=1
+            })
+            .attr({
+                transform: function(d){
+                    return "translate(" + projection(d.geometry.coordinates) + ")"
+                },
+                r: 3,
+            })
+            .style({
+                stroke: "black",
+                "stroke-width": 0,
+                fill: "#1A1A1E",
+                "fill-opacity": 0.5,
+                r: 1,
+            })
+
+
+        // city names
+        var city_labels = svg_map.append("g")
+            .attr("id", "city_labels")
+            .selectAll("text")
+            .data(worldCities)
+            .enter()
+            .append("text")
+            .filter(function(d){
+                return d.properties.SCALERANK <=1
+            })
+            .text(function(d){
+                return d.properties.NAME
+            })
+            .attr({
+                transform: function(d){
+                    return "translate(" + projection(d.geometry.coordinates) + ")"
+                },
+                dx: 5,
+                dy: 1,
+                r: 3,
+            })
+            .style({
+                stroke: "black",
+                "stroke-width": 0,
+                fill: "#1A1A1E",
+                "fill-opacity": 0.5,
+                r: 1,
+            })
+
+        console.log("worldCities", worldCities)
 
         // label projection on map
         var textLabel = svg_map.append("text")
@@ -131,7 +190,6 @@ function displayMap(){
               })
               .style("fill", "white")
         loadData()
-    })
 }
 
 // cesium data loaded into an array
@@ -162,7 +220,6 @@ function loadData(){
                 cs137Max = parseFloat(d['cs137'].replace(/,/g,''))
             } 
         })
-        console.log("csData: ", csData)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         // update slider scale
