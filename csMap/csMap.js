@@ -54,16 +54,16 @@ var projectionMethods = [
         method: d3.geo.azimuthalEqualArea().clipAngle(180 - 1e-3).scale(237).translate([width / 2, height / 2])//.precision(.1)
     },{
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +50]).rotate([-180, 0]).scale(400).precision(.01)
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +150]).rotate([-160, 0]).scale(450).precision(.01)
     },
     {
         name: "equirectangular Pacific",
-        method: d3.geo.equirectangular().translate([(width / 2) - 100, height / 2]).rotate([-160, 0]).scale(280).precision(.01)
+        method: d3.geo.equirectangular().translate([(width / 2) - 100, (height / 2) + 100]).rotate([-160, 0]).scale(350).precision(.01)
     }
 ]
 
 // base map parameters
-var actualProjectionMethod = 4
+var actualProjectionMethod = 5
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([2, 15])
@@ -75,15 +75,9 @@ var slider_x = d3.time.scale().range([0, width]).clamp(true)
 // circle transparency scales
 var fillOpScale = d3.scale.linear().range([0, 0.5])
 var strokeOpScale = d3.scale.linear().range([0, 1])
-var one_day = 1000*60*60*24   // in milliseconds
+var one_day = 1000*60*60*24   // one day in milliseconds
 fillOpScale.domain([90*one_day, 0])
 strokeOpScale.domain([90*one_day, 0])
-
-// once page has loaded, display the map ** do we need this still? **//
-$(document).ready(function(){
-    // displayMap()
-    // d3.select("body").append("button").text("changePro").on({"click":changePro})
-})
 
 // change the projection interactively --- under development!
 var changePro = function(){
@@ -108,11 +102,13 @@ var changePro = function(){
 // load map data and display
 queue().defer(d3.json, "../data/ne_50m_coastline.json")
        .defer(d3.json, "../data/ne_50m_populated_places.json")
+       .defer(d3.json, "../data/ne_50m_admin_0_countries.json")
        .await(displayMap)
 
-function displayMap(error, coastline_data, cities_data){
+function displayMap(error, coastline_data, cities_data, country_data){
         var worldCoasts = topojson.feature(coastline_data,coastline_data.objects.ne_50m_coastline).features
         var worldCities = topojson.feature(cities_data, cities_data.objects.ne_50m_populated_places).features
+        var worldCountries = topojson.feature(country_data, country_data.objects.ne_50m_admin_0_countries).features
         var coastline = svg_map.append("g")
             .attr("id", "coastline")
             .selectAll("path")
@@ -126,10 +122,26 @@ function displayMap(error, coastline_data, cities_data){
                 stroke: "none", 
                 fill: "darkolivegreen",
             })
+        // country administrative borders
+        var countries = svg_map.append("g")
+            .attr("id", "countries")
+            .selectAll("path")
+            .data(worldCountries)
+            .enter()
+            .append("path")
+            .attr({
+                d: path_map,
+            })
+            .style({
+                stroke: "lightgrey",
+                "stroke-opacity": 0.3,
+                fill: "none",
+            })
+            
         // city markers
         var cities = svg_map.append("g")
             .attr("id", "cities")
-            .selectAll("path")
+            .selectAll("circle")
             .data(worldCities)
             .enter()
             .append("circle")
@@ -149,7 +161,6 @@ function displayMap(error, coastline_data, cities_data){
                 "fill-opacity": 0.5,
                 r: 1,
             })
-
 
         // city names
         var city_labels = svg_map.append("g")
@@ -179,8 +190,6 @@ function displayMap(error, coastline_data, cities_data){
                 "fill-opacity": 0.5,
                 r: 1,
             })
-
-        console.log("worldCities", worldCities)
 
         // label projection on map
         var textLabel = svg_map.append("text")
