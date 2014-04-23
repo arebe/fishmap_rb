@@ -5,15 +5,16 @@ var margin = {
     bottom: 50,
     left: 50
 }
-
+// size of full vis
 var width = 960 - margin.left - margin.right
-var height = 700 - margin.bottom - margin.top
+var height = 600 - margin.bottom - margin.top
 
+// use this for histogram vis beneath slider
 var bbVis = {
-    x: 100,
-    y: 10,
+    x: margin.left, 
+    y: height - margin.bottom,
     w: width - 100,
-    h: 300
+    h: 100,
 }
 
 // attach svg object to the DOM
@@ -63,7 +64,7 @@ var projectionMethods = [
 ]
 
 // base map parameters
-var actualProjectionMethod = 5
+var actualProjectionMethod = 4
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([2, 15])
@@ -78,6 +79,9 @@ var strokeOpScale = d3.scale.linear().range([0, 1])
 var one_day = 1000*60*60*24   // one day in milliseconds
 fillOpScale.domain([90*one_day, 0])
 strokeOpScale.domain([90*one_day, 0])
+
+// interaction states
+var show_timeline = 0
 
 // change the projection interactively --- under development!
 var changePro = function(){
@@ -100,15 +104,24 @@ var changePro = function(){
 }
 
 // load map data and display
+// original data from naturalearthdata.com
+var worldCoasts, worldCities, worldCountries
+
 queue().defer(d3.json, "../data/ne_50m_coastline.json")
        .defer(d3.json, "../data/ne_50m_populated_places.json")
        .defer(d3.json, "../data/ne_50m_admin_0_countries.json")
-       .await(displayMap)
+       .await(loadMap)
 
-function displayMap(error, coastline_data, cities_data, country_data){
-        var worldCoasts = topojson.feature(coastline_data,coastline_data.objects.ne_50m_coastline).features
-        var worldCities = topojson.feature(cities_data, cities_data.objects.ne_50m_populated_places).features
-        var worldCountries = topojson.feature(country_data, country_data.objects.ne_50m_admin_0_countries).features
+
+function loadMap(error, coastline_data, cities_data, country_data){
+    worldCoasts = topojson.feature(coastline_data,coastline_data.objects.ne_50m_coastline).features
+    worldCities = topojson.feature(cities_data, cities_data.objects.ne_50m_populated_places).features
+    worldCountries = topojson.feature(country_data, country_data.objects.ne_50m_admin_0_countries).features
+    displayMap()
+}
+
+function displayMap(){
+     // land area
         var coastline = svg_map.append("g")
             .attr("id", "coastline")
             .selectAll("path")
@@ -158,7 +171,7 @@ function displayMap(error, coastline_data, cities_data, country_data){
                 stroke: "black",
                 "stroke-width": 0,
                 fill: "#1A1A1E",
-                "fill-opacity": 0.5,
+                "fill-opacity": 0.7,
                 r: 1,
             })
 
@@ -179,8 +192,8 @@ function displayMap(error, coastline_data, cities_data, country_data){
                 transform: function(d){
                     return "translate(" + projection(d.geometry.coordinates) + ")"
                 },
-                dx: 5,
-                dy: 1,
+                dx: -2,
+                dy: -2,
                 r: 3,
             })
             .style({
@@ -188,7 +201,7 @@ function displayMap(error, coastline_data, cities_data, country_data){
                 "stroke-width": 0,
                 fill: "#1A1A1E",
                 "fill-opacity": 0.5,
-                r: 1,
+                "text-anchor": "end",
             })
 
         // label projection on map
@@ -235,6 +248,7 @@ function loadData(){
         slider_x.domain(d3.extent(csData, function(d){ return d.date }))
         // display data on map
         drawCircles(csData)
+        drawFukushima()
         drawSlider()
     })
 }
@@ -259,7 +273,9 @@ function drawCircles(data){
             fill: "darkblue",
             stroke: "darkblue"
         })
+}
 
+function drawFukushima(){
     var fukushima = svg_map.append("g")
         .attr("id", "fukushima")
         .append("circle")
@@ -304,8 +320,8 @@ function drawSlider(){
     var brush = d3.svg.brush().x(slider_x).extent([0,0]).on("brush", brushed)
     svg_map.append("g")
            .attr({
-            class: "x axis",
-            transform: "translate(" + margin.left + "," + (height - margin.bottom) + ")",
+            class: "x axis whatever",
+            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h) + ")",
            })
            .call(d3.svg.axis()
               .scale(slider_x)
@@ -322,12 +338,15 @@ function drawSlider(){
         .call(brush)
 
     slider.selectAll(".background")
-          .attr("height", height)
+          .attr({
+            y: height - margin.bottom - bbVis.h,
+            height: 20,
+         })
 
     var handle = slider.append("circle")
         .attr({
             class: "handle",
-            transform: "translate(" + margin.left + "," + (height - margin.bottom) + ")",
+            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h) + ")",
             r: 9,
         })
 
@@ -348,7 +367,22 @@ function drawSlider(){
         handle.attr("cx", slider_x(value))
         d3.selectAll(".reading").attr({
             "fill-opacity": function(d){ return fillOpScale(Math.abs(value - d.date)) },
-            "stroke-opacity": function(d){ return strokeOpScale(Math.abs(value - d.date)) }
+            "stroke-opacity": function(d){ return strokeOpScale(Math.abs(value - d.date)) },
         })
+    }
+}
+
+function updateMap(){
+    if (show_timeline){
+        d3.selectAll(".handle")
+          .attr("visibility", "visible")
+          .selectAll(".x axis")
+          .attr("visibility", "visible")
+    }
+    else {
+        d3.selectAll(".handle")
+          .attr("visibility", "hidden")
+        d3.selectAll(".x axis")
+          .attr("visibility", "hidden")
     }
 }
