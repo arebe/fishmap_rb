@@ -55,16 +55,16 @@ var projectionMethods = [
         method: d3.geo.azimuthalEqualArea().clipAngle(180 - 1e-3).scale(237).translate([width / 2, height / 2])//.precision(.1)
     },{
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +150]).rotate([-160, 0]).scale(450).precision(.01)
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +200]).rotate([-180, 0]).scale(450).precision(.01)
     },
     {
         name: "equirectangular Pacific",
-        method: d3.geo.equirectangular().translate([(width / 2) - 100, (height / 2) + 100]).rotate([-160, 0]).scale(350).precision(.01)
+        method: d3.geo.equirectangular().translate([(width / 2) - 100, (height / 2) + 150]).rotate([-160, 0]).scale(400).precision(.01)
     }
 ]
 
 // base map parameters
-var actualProjectionMethod = 4
+var actualProjectionMethod = 5
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([2, 15])
@@ -227,7 +227,8 @@ function displayMap(){
 
 // cesium data loaded into an array
 var csData = []
-var fukushimaCoord = projection([141.0329, 37.4230])
+var fukushimaLongLat = [141.0329, 37.4230]
+var fukushimaCoord = projection(fukushimaLongLat)
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
@@ -239,12 +240,13 @@ function loadData(){
             csData.push({
                 source: d['source'],
                 coordinates: projection([d.coordinates[0], d.coordinates[1]]),
-                cs134: d['cs134'],
+                cs134: parseFloat(d['cs134'].replace(/,/g,'')),
                 cs137: parseFloat(d['cs137'].replace(/,/g,'')),
                 date: parseDate(d['date']),
                 temp: d['temp'],
                 salinity: d['salinity'],
-                depth: d['depth']
+                depth: d['depth'],
+                fukushima_distance: calcDist([d.coordinates[0], d.coordinates[1]]),
             })
             if(parseFloat(d['cs137'].replace(/,/g,'')) < cs137Min){
                 cs137Min = parseFloat(d['cs137'].replace(/,/g,''))
@@ -253,6 +255,7 @@ function loadData(){
                 cs137Max = parseFloat(d['cs137'].replace(/,/g,''))
             } 
         })
+        console.log("csData: ", csData)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         // update slider scale
@@ -331,9 +334,10 @@ function drawFukushima(){
     //---------------------------------------------------------------------//
 }
 
-function drawSlider(){
-    //-- borrowed from http://bl.ocks.org/mbostock/6452972 ---//
+//-- borrowed from http://bl.ocks.org/mbostock/6452972 ---//
+function drawSlider(){    
     var brush = d3.svg.brush().x(slider_x).extent([0,0]).on("brush", brushed)
+
     svg_map.append("g")
            .attr({
             class: "x axis",
@@ -355,8 +359,8 @@ function drawSlider(){
 
     slider.selectAll(".background")
           .attr({
-            y: height - margin.bottom - bbVis.h,
-            height: 20,
+            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h -10) + ")",
+            height: 30,
          })
 
     var handle = slider.append("circle")
@@ -387,4 +391,27 @@ function drawSlider(){
         })
     }
 }
+//---------------------------------------------------------------------//
 
+//-- adapted from https://groups.google.com/forum/#!topic/d3-js/0p7LuNHpEbM---//
+function calcDist (cC) {
+    // origin point: fukushimaLongLat
+    var dLatRad = Math.abs(fukushimaLongLat[1] - cC[1]) * Math.PI/180
+    var dLonRad = Math.abs(fukushimaLongLat[0] - cC[0]) * Math.PI/180
+    // Calculate origin in Radians
+    var lat1Rad = fukushimaLongLat[1] * Math.PI/180
+    var lon1Rad = fukushimaLongLat[0] * Math.PI/180
+    // Calculate new point in Radians
+    var lat2Rad = cC[1] * Math.PI/180
+    var lon2Rad = cC[0] * Math.PI/180
+
+    // Earth's Radius
+    var eR = 6371
+
+    var d1 = Math.sin(dLatRad/2) * Math.sin(dLatRad/2) +
+     Math.sin(dLonRad/2) * Math.sin(dLonRad/2) * Math.cos(lat1Rad) * Math.cos(lat2Rad)
+    var d2 = 2 * Math.atan2(Math.sqrt(d1), Math.sqrt(1-d1))
+
+    return(eR * d2) // distance in km
+}
+//---------------------------------------------------------------------//
