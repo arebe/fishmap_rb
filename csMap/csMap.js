@@ -83,6 +83,17 @@ strokeOpScale.domain([90*one_day, 0])
 // interaction states
 var show_timeline = 0
 
+// tooltips
+//--from http://bl.ocks.org/Caged/6476579 ----------------//
+var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .offset([-10, 0])
+  .html(function(d) {
+    return "<strong>Cs137:</strong> " + d.cs137 +"<br><strong>Cs134:</strong> " + d.cs134 +"<br><strong>Salinity:</strong> " + d.salinity + "<br><strong>Temp: </strong>" + d.temp
+  })
+  svg_map.call(tip)
+ //------------------------------------------------------//
+
 // change the projection interactively --- under development!
 var changePro = function(){
     if (actualProjectionMethod === 4) {
@@ -254,7 +265,6 @@ function loadData(){
 }
 
 function drawCircles(data){
-
     var readings = svg_map.append("g")
         .attr("id", "readings")
         .selectAll("circle")
@@ -271,8 +281,14 @@ function drawCircles(data){
         })
         .style({
             fill: "darkblue",
-            stroke: "darkblue"
+            stroke: "darkblue",
+            "stroke-opacity": function(){
+                if (!show_timeline){ return 0.1 }
+            }
         })
+        .on("mouseover", tip.show)
+        .on("mouseout", tip.hide)
+
 }
 
 function drawFukushima(){
@@ -320,7 +336,7 @@ function drawSlider(){
     var brush = d3.svg.brush().x(slider_x).extent([0,0]).on("brush", brushed)
     svg_map.append("g")
            .attr({
-            class: "x axis whatever",
+            class: "x axis",
             transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h) + ")",
            })
            .call(d3.svg.axis()
@@ -372,17 +388,3 @@ function drawSlider(){
     }
 }
 
-function updateMap(){
-    if (show_timeline){
-        d3.selectAll(".handle")
-          .attr("visibility", "visible")
-          .selectAll(".x axis")
-          .attr("visibility", "visible")
-    }
-    else {
-        d3.selectAll(".handle")
-          .attr("visibility", "hidden")
-        d3.selectAll(".x axis")
-          .attr("visibility", "hidden")
-    }
-}
