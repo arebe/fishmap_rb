@@ -427,27 +427,29 @@ function drawChart(data){
                 })
 
     var dots = svg_map.append("g")
-                .attr("id", "dots")
-                .selectAll(".dot")
-                .data(data)
-                .enter()
-                .append("circle")
-                .filter(
-                    function(d){ if(isNaN(d.cs137)){ return false } else {  return true } }
-                )
-                .attr("class", "dot")
-                .attr({
-                    r: 3,
-                    cx: function(d){ return chartXScale(d.fukushimaDistance) },
-                    cy: function(d){ if(d.cs137 > 0){ return chartYScale(d.cs137)} },
-                })
-                .style({
-                    fill: "darkblue",
-                    stroke: "darkblue",
-                    "stroke-width": 1,
-                    "stroke-opacity": 0.1,
+        .attr("id", "dots")
+        .selectAll(".dot")
+        .data(data)
+        .enter()
+        .append("circle")
+        .filter(
+            function(d){ if(isNaN(d.cs137)){ return false } else {  return true } }
+        )
+        .attr("class", "dot")
+        .attr({
+            r: 3,
+            cx: function(d){ return chartXScale(d.fukushimaDistance) },
+            cy: function(d){ if(d.cs137 > 0){ return chartYScale(d.cs137)} },
+        })
+        .style({
+            fill: "darkblue",
+            stroke: "darkblue",
+            "stroke-width": 1,
+            "stroke-opacity": 0.1,
 
-                })
+        })
+        .on("mouseover", tip.show)
+        .on("mouseout", tip.hide)
     // X Axis
     svg_map.append("g")
         .attr({
