@@ -2,7 +2,7 @@
 var margin = {
     top: 50,
     right: 50,
-    bottom: 50,
+    bottom: 30,
     left: 50
 }
 // size of full vis
@@ -12,9 +12,9 @@ var height = 600 - margin.bottom - margin.top
 // use this for histogram vis beneath slider
 var bbVis = {
     x: margin.left, 
-    y: height - margin.bottom,
-    w: width - 100,
-    h: 100,
+    y: height - margin.bottom - 80,
+    w: width,
+    h: 150,
 }
 
 // attach svg object to the DOM
@@ -37,7 +37,6 @@ svg_map.append("rect")
 svg_map.append("g").attr({
         transform: "translate(" + margin.left + "," + margin.top + ")"
     })
-
 
 // a variety of map projection methods
 var projectionMethods = [
@@ -73,12 +72,19 @@ var rScale = d3.scale.linear().range([2, 15])
 var parseDate = d3.time.format("%m/%e/%y").parse
 var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
+
 // circle transparency scales
 var fillOpScale = d3.scale.linear().range([0, 0.5])
 var strokeOpScale = d3.scale.linear().range([0, 1])
 var one_day = 1000*60*60*24   // one day in milliseconds
 fillOpScale.domain([90*one_day, 0])
 strokeOpScale.domain([90*one_day, 0])
+
+// scatterplot chart parameters
+var chartXScale = d3.scale.log().range([bbVis.x, bbVis.x + bbVis.w])
+var chartYScale = d3.scale.log().range([bbVis.y + bbVis.h, bbVis.y])
+var chartXAxis = d3.svg.axis().scale(chartXScale).orient("bottom").ticks(30)
+var chartYAxis = d3.svg.axis().scale(chartYAxis).orient("right").ticks(10)
 
 // interaction states
 var show_timeline = 0
@@ -92,27 +98,7 @@ var tip = d3.tip()
     return "<strong>Cs137:</strong> " + d.cs137 +"<br><strong>Cs134:</strong> " + d.cs134 +"<br><strong>Salinity:</strong> " + d.salinity + "<br><strong>Temp: </strong>" + d.temp
   })
   svg_map.call(tip)
- //------------------------------------------------------//
-
-// change the projection interactively --- under development!
-var changePro = function(){
-    if (actualProjectionMethod === 4) {
-        actualProjectionMethod = 5
-    }
-    else if(actualProjectionMethod === 5){
-        actualProjectionMethod = 4
-    }
-    else{
-        console.log("wtf: ", actualProjectionMethod)
-    }
-    projection =  projectionMethods[actualProjectionMethod].method
-    path_map= d3.geo.path().projection(projection)
-    $("#coastline").remove()
-    svg_map.selectAll(".reading").attr({transform: function(d){
-                return "translate(" + d.coordinates + ")"
-            },})
-    displayMap()
-}
+//------------------------------------------------------//
 
 // load map data and display
 // original data from naturalearthdata.com
@@ -123,7 +109,6 @@ queue().defer(d3.json, "../data/ne_50m_coastline.json")
        .defer(d3.json, "../data/ne_50m_admin_0_countries.json")
        .await(loadMap)
 
-
 function loadMap(error, coastline_data, cities_data, country_data){
     worldCoasts = topojson.feature(coastline_data,coastline_data.objects.ne_50m_coastline).features
     worldCities = topojson.feature(cities_data, cities_data.objects.ne_50m_populated_places).features
@@ -132,97 +117,97 @@ function loadMap(error, coastline_data, cities_data, country_data){
 }
 
 function displayMap(){
-     // land area
-        var coastline = svg_map.append("g")
-            .attr("id", "coastline")
-            .selectAll("path")
-            .data(worldCoasts)
-            .enter()
-            .append("path")
-            .attr({
-                d: path_map,
-            })
-            .style({
-                stroke: "none", 
-                fill: "darkolivegreen",
-            })
-        // country administrative borders
-        var countries = svg_map.append("g")
-            .attr("id", "countries")
-            .selectAll("path")
-            .data(worldCountries)
-            .enter()
-            .append("path")
-            .attr({
-                d: path_map,
-            })
-            .style({
-                stroke: "lightgrey",
-                "stroke-opacity": 0.3,
-                fill: "none",
-            })
-            
-        // city markers
-        var cities = svg_map.append("g")
-            .attr("id", "cities")
-            .selectAll("circle")
-            .data(worldCities)
-            .enter()
-            .append("circle")
-            .filter(function(d){
-                return d.properties.SCALERANK <=1
-            })
-            .attr({
-                transform: function(d){
-                    return "translate(" + projection(d.geometry.coordinates) + ")"
-                },
-                r: 3,
-            })
-            .style({
-                stroke: "black",
-                "stroke-width": 0,
-                fill: "#1A1A1E",
-                "fill-opacity": 0.7,
-                r: 1,
-            })
+    // land area
+    var coastline = svg_map.append("g")
+        .attr("id", "coastline")
+        .selectAll("path")
+        .data(worldCoasts)
+        .enter()
+        .append("path")
+        .attr({
+            d: path_map,
+        })
+        .style({
+            stroke: "none", 
+            fill: "darkolivegreen",
+        })
+    // country administrative borders
+    var countries = svg_map.append("g")
+        .attr("id", "countries")
+        .selectAll("path")
+        .data(worldCountries)
+        .enter()
+        .append("path")
+        .attr({
+            d: path_map,
+        })
+        .style({
+            stroke: "lightgrey",
+            "stroke-opacity": 0.3,
+            fill: "none",
+        })
+        
+    // city markers
+    var cities = svg_map.append("g")
+        .attr("id", "cities")
+        .selectAll("circle")
+        .data(worldCities)
+        .enter()
+        .append("circle")
+        .filter(function(d){
+            return d.properties.SCALERANK <=1
+        })
+        .attr({
+            transform: function(d){
+                return "translate(" + projection(d.geometry.coordinates) + ")"
+            },
+            r: 3,
+        })
+        .style({
+            stroke: "black",
+            "stroke-width": 0,
+            fill: "#1A1A1E",
+            "fill-opacity": 0.7,
+            r: 1,
+        })
 
-        // city names
-        var city_labels = svg_map.append("g")
-            .attr("id", "city_labels")
-            .selectAll("text")
-            .data(worldCities)
-            .enter()
-            .append("text")
-            .filter(function(d){
-                return d.properties.SCALERANK <=1
-            })
-            .text(function(d){
-                return d.properties.NAME
-            })
-            .attr({
-                transform: function(d){
-                    return "translate(" + projection(d.geometry.coordinates) + ")"
-                },
-                dx: -2,
-                dy: -2,
-                r: 3,
-            })
-            .style({
-                stroke: "black",
-                "stroke-width": 0,
-                fill: "#1A1A1E",
-                "fill-opacity": 0.5,
-                "text-anchor": "end",
-            })
+    // city names
+    var city_labels = svg_map.append("g")
+        .attr("id", "city_labels")
+        .selectAll("text")
+        .data(worldCities)
+        .enter()
+        .append("text")
+        .filter(function(d){
+            return d.properties.SCALERANK <=1
+        })
+        .text(function(d){
+            return d.properties.NAME
+        })
+        .attr({
+            transform: function(d){
+                return "translate(" + projection(d.geometry.coordinates) + ")"
+            },
+            dx: -2,
+            dy: -2,
+            r: 3,
+        })
+        .style({
+            stroke: "black",
+            "stroke-width": 0,
+            fill: "#1A1A1E",
+            "fill-opacity": 0.5,
+            "text-anchor": "end",
+        })
 
-        // label projection on map
-        var textLabel = svg_map.append("text")
-              .text(projectionMethods[actualProjectionMethod].name)
-              .attr({
-                "transform":"translate(-40,-30)"
-              })
-              .style("fill", "white")
-        loadData()
+    // label projection on map
+    var textLabel = svg_map.append("text")
+          .text(projectionMethods[actualProjectionMethod].name)
+          .attr({
+            "transform":"translate(-40,-30)"
+          })
+          .style("fill", "white")
+    loadData()
 }
 
 // cesium data loaded into an array
@@ -232,8 +217,6 @@ var fukushimaCoord = projection(fukushimaLongLat)
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
-        var cs137Min = 0
-        var cs137Max = 0
         // this is super janky - need to find a better solution than all these parseFloats..
         data.forEach(function(d){
             // console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
@@ -246,24 +229,42 @@ function loadData(){
                 temp: d['temp'],
                 salinity: d['salinity'],
                 depth: d['depth'],
-                fukushima_distance: calcDist([d.coordinates[0], d.coordinates[1]]),
+                fukushimaDistance: calcDist([d.coordinates[0], d.coordinates[1]]),
             })
-            if(parseFloat(d['cs137'].replace(/,/g,'')) < cs137Min){
-                cs137Min = parseFloat(d['cs137'].replace(/,/g,''))
-            }
-            if(parseFloat(d['cs137'].replace(/,/g,'')) > cs137Max){
-                cs137Max = parseFloat(d['cs137'].replace(/,/g,''))
-            } 
         })
         console.log("csData: ", csData)
+        // calculate max and min values for scales
+        var cs137Min = 1
+        var cs137Max = 0
+        var fDistMin = 1 
+        var fDistMax = 0
+        csData.map(function(d){
+            if(parseFloat(d.cs137) < cs137Min){
+                cs137Min = parseFloat(d.cs137)
+            }
+            if(parseFloat(d.cs137) > cs137Max){
+                cs137Max = parseFloat(d.cs137)
+            }
+            if(parseFloat(d.fukushimaDistance) < fDistMin){
+                fDistMin = parseFloat(d.fukushimaDistance)
+            }
+            if(parseFloat(d.fukushimaDistance) > fDistMax){
+                fDistMax = parseFloat(d.fukushimaDistance)
+            }
+        })
+        console.log("cs137Min: ", cs137Min, " cs137Max: ", cs137Max)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         // update slider scale
         slider_x.domain(d3.extent(csData, function(d){ return d.date }))
-        // display data on map
+        // update chart scales
+        chartXScale.domain([fDistMin, fDistMax]).clamp(true).nice()
+        chartYScale.domain([cs137Min, cs137Max]).clamp(true).nice()
+        // once everything's loaded...display data on map
         drawCircles(csData)
         drawFukushima()
         drawSlider()
+        drawChart(csData)
     })
 }
 
@@ -341,7 +342,7 @@ function drawSlider(){
     svg_map.append("g")
            .attr({
             class: "x axis",
-            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h) + ")",
+            transform: "translate(" + margin.left + "," + (bbVis.y - 30) + ")",
            })
            .call(d3.svg.axis()
               .scale(slider_x)
@@ -359,14 +360,14 @@ function drawSlider(){
 
     slider.selectAll(".background")
           .attr({
-            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h -10) + ")",
+            transform: "translate(" + margin.left + "," + (bbVis.y - 30 -10) + ")",
             height: 30,
          })
 
     var handle = slider.append("circle")
         .attr({
             class: "handle",
-            transform: "translate(" + margin.left + "," + (height - margin.bottom - bbVis.h) + ")",
+            transform: "translate(" + margin.left + "," + (bbVis.y - 30) + ")",
             r: 9,
         })
 
@@ -393,6 +394,56 @@ function drawSlider(){
 }
 //---------------------------------------------------------------------//
 
+// create a scatterplot of the cs measurements over distance from Fukushima
+function drawChart(data){
+    var chart = svg_map.append("g")
+                .attr("id", "chart_background")
+                .append("rect")
+                .attr({
+                    transform: "translate(" + bbVis.x + ", " + bbVis.y + ")",
+                    width: bbVis.w,
+                    height: bbVis.h,
+                })
+                .style({
+                    fill: "aliceblue",
+                    stroke: "darkolivegreen"                    
+                })
+
+    var dots = svg_map.append("g")
+                .attr("id", "dots")
+                .selectAll(".dot")
+                .data(data)
+                .enter()
+                .append("circle")
+                .filter(
+                    function(d){ if(isNaN(d.cs137)){ return false } else {  return true } }
+                )
+                .attr("class", "dot")
+                .attr({
+                    r: 5,
+                    cx: function(d){ return chartXScale(d.fukushimaDistance) },
+                    cy: function(d){ if(d.cs137 > 0){ console.log("scaled cs137: ", chartYScale(d.cs137)); return chartYScale(d.cs137)} },
+                })
+                .style({
+                    fill: "darkblue",
+                    "fill-opacity": 0.7,
+                })
+    // X Axis
+    svg_map.append("g")
+         // .attr({
+         //    class: "chart x_axis",
+         //    transform: "translate(" + bbVis.x + ", " + bbVis.y + ")",
+         // })
+         // .call(chartXAxis)
+         // .selectAll("text:not(.x_title")
+         // .attr({
+         //    transform: function(d){ return "rotate(-90)" }
+         // })
+
+    // Y Axis
+}
+
+// calculate distance between two sets of map coordinates
 //-- adapted from https://groups.google.com/forum/#!topic/d3-js/0p7LuNHpEbM---//
 function calcDist (cC) {
     // origin point: fukushimaLongLat
