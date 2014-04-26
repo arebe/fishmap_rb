@@ -74,14 +74,14 @@ var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
 
 // circle transparency scales
-var fillOpScale = d3.scale.linear().range([0, 0.5])
+var fillOpScale = d3.scale.linear().range([0, 0.7])
 var strokeOpScale = d3.scale.linear().range([0, 1])
 var one_day = 1000*60*60*24   // one day in milliseconds
-fillOpScale.domain([90*one_day, 0])
+fillOpScale.domain([30*one_day, 0])
 strokeOpScale.domain([90*one_day, 0])
 
 // scatterplot chart parameters
-var chartXScale = d3.scale.log().range([bbVis.x, bbVis.x + bbVis.w])
+var chartXScale = d3.scale.linear().range([bbVis.x, bbVis.x + bbVis.w])
 var chartYScale = d3.scale.log().range([bbVis.y + bbVis.h, bbVis.y])
 var chartXAxis = d3.svg.axis().scale(chartXScale).orient("bottom").ticks(30)
 var chartYAxis = d3.svg.axis().scale(chartYAxis).orient("right").ticks(10)
@@ -252,7 +252,6 @@ function loadData(){
                 fDistMax = parseFloat(d.fukushimaDistance)
             }
         })
-        console.log("cs137Min: ", cs137Min, " cs137Max: ", cs137Max)
         // update circle radius scale
         rScale.domain([cs137Min, cs137Max])
         // update slider scale
@@ -286,9 +285,7 @@ function drawCircles(data){
         .style({
             fill: "darkblue",
             stroke: "darkblue",
-            "stroke-opacity": function(){
-                if (!show_timeline){ return 0.1 }
-            }
+            "stroke-opacity": 0.1, 
         })
         .on("mouseover", tip.show)
         .on("mouseout", tip.hide)
@@ -386,7 +383,13 @@ function drawSlider(){
         }
 
         handle.attr("cx", slider_x(value))
+        // change opacity of map circles
         d3.selectAll(".reading").attr({
+            "fill-opacity": function(d){ return fillOpScale(Math.abs(value - d.date)) },
+            "stroke-opacity": function(d){ return strokeOpScale(Math.abs(value - d.date)) },
+        })
+        // change opacity of chart dots
+        d3.selectAll(".dot").attr({
             "fill-opacity": function(d){ return fillOpScale(Math.abs(value - d.date)) },
             "stroke-opacity": function(d){ return strokeOpScale(Math.abs(value - d.date)) },
         })
@@ -426,7 +429,10 @@ function drawChart(data){
                 })
                 .style({
                     fill: "darkblue",
-                    "fill-opacity": 0.7,
+                    stroke: "darkblue",
+                    "stroke-width": 1,
+                    "stroke-opacity": 0.1,
+
                 })
     // X Axis
     svg_map.append("g")
