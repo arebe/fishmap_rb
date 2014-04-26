@@ -17,6 +17,19 @@ table{
     border:none;
 }
 
+/* chart axes */
+.chart_axis text {
+        font: 10px sans-serif;
+    }
+
+.chart_axis line,
+.chart_axis path {
+    fill: none;
+    stroke: #000;
+    shape-rendering: crispEdges;
+}
+
+
 /* slider */
 /* from http://bl.ocks.org/mbostock/6452972 */
 

@@ -1,7 +1,7 @@
 // create D3 visualization viewport parameters
 var margin = {
     top: 50,
-    right: 50,
+    right: 80,
     bottom: 30,
     left: 50
 }
@@ -84,7 +84,7 @@ strokeOpScale.domain([90*one_day, 0])
 var chartXScale = d3.scale.linear().range([bbVis.x, bbVis.x + bbVis.w])
 var chartYScale = d3.scale.log().range([bbVis.y + bbVis.h, bbVis.y])
 var chartXAxis = d3.svg.axis().scale(chartXScale).orient("bottom").ticks(30)
-var chartYAxis = d3.svg.axis().scale(chartYAxis).orient("right").ticks(10)
+var chartYAxis = d3.svg.axis().scale(chartYScale).orient("right").ticks(10)
 
 // interaction states
 var show_timeline = 0
@@ -247,7 +247,6 @@ function loadData(){
                 fukushimaDistance: calcDist([d.coordinates[0], d.coordinates[1]]),
             })
         })
-        console.log("csData: ", csData)
         // calculate max and min values for scales
         var cs137Min = 1
         var cs137Max = 0
@@ -438,7 +437,7 @@ function drawChart(data){
                 )
                 .attr("class", "dot")
                 .attr({
-                    r: 5,
+                    r: 3,
                     cx: function(d){ return chartXScale(d.fukushimaDistance) },
                     cy: function(d){ if(d.cs137 > 0){ return chartYScale(d.cs137)} },
                 })
@@ -451,17 +450,43 @@ function drawChart(data){
                 })
     // X Axis
     svg_map.append("g")
-         // .attr({
-         //    class: "chart x_axis",
-         //    transform: "translate(" + bbVis.x + ", " + bbVis.y + ")",
-         // })
-         // .call(chartXAxis)
-         // .selectAll("text:not(.x_title")
-         // .attr({
-         //    transform: function(d){ return "rotate(-90)" }
-         // })
-
-    // Y Axis
+        .attr({
+           class: "chart_axis",
+           transform: "translate(" + 0 + ", " + (bbVis.y + 210)  + ")",
+        })
+        .call(chartXAxis)
+        .selectAll("text:not(.x_title")
+        .style({
+           "font-size": "8pt",
+        })
+    // X Axis Title
+    svg_map.append("text")
+        .attr({
+            class: "x_title",
+            x: bbVis.x + bbVis.w,
+            y: bbVis.y + bbVis.h,
+            dx: "-0.4em",
+            dy: "-0.4em",
+        })
+        .style("text-anchor", "end")
+        .text("Distance from Fukushima (km)")
+    // Y Axis & Title
+    svg_map.append("g")
+        .attr({
+            class: "chart_axis",
+            transform: "translate(" + (bbVis.x + bbVis.w )+ ",0)",
+        })
+        .call(chartYAxis)
+        .append("text")
+        .attr({
+            transform: "rotate(-90)",
+            // y: 100,
+            x: -bbVis.y,
+            dx: "-0.5em",
+            dy: "-0.5em",
+        })
+        .style("text-anchor", "end")
+        .text("Cs137 (Bq/m^3)")
 }
 
 // calculate distance between two sets of map coordinates
