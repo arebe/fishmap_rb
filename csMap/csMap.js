@@ -130,7 +130,7 @@ function displayMap(){
         .attr({
             width: 575,
             height: 575,
-            "xlink:href": "/images/mountaintile.jpg",
+            "xlink:href": "../images/mountaintile.jpg",
         })
     var coastline = svg_map.append("g")
         .attr("id", "coastline")
