@@ -12,9 +12,9 @@ var height = 600 - margin.bottom - margin.top
 // use this for histogram vis beneath slider
 var bbVis = {
     x: margin.left, 
-    y: height - margin.bottom - 80,
+    y: height + margin.top - 210,
     w: width,
-    h: 150,
+    h: 210,
 }
 
 // attach svg object to the DOM
