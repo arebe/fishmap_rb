@@ -118,6 +118,20 @@ function loadMap(error, coastline_data, cities_data, country_data){
 
 function displayMap(){
     // land area
+    svg_map.append("svg:defs")
+        .append("svg:pattern")
+        .attr({
+            id: "mountaintile",
+            patternUnits: "userSpaceOnUse",
+            width: 575,
+            height: 575,
+        })
+        .append("svg:image")
+        .attr({
+            width: 575,
+            height: 575,
+            "xlink:href": "/images/mountaintile.jpg",
+        })
     var coastline = svg_map.append("g")
         .attr("id", "coastline")
         .selectAll("path")
@@ -129,7 +143,8 @@ function displayMap(){
         })
         .style({
             stroke: "none", 
-            fill: "darkolivegreen",
+            fill: "url(#mountaintile)",
+            "fill-opacity": 0.6,
         })
     // country administrative borders
     var countries = svg_map.append("g")
@@ -425,7 +440,7 @@ function drawChart(data){
                 .attr({
                     r: 5,
                     cx: function(d){ return chartXScale(d.fukushimaDistance) },
-                    cy: function(d){ if(d.cs137 > 0){ console.log("scaled cs137: ", chartYScale(d.cs137)); return chartYScale(d.cs137)} },
+                    cy: function(d){ if(d.cs137 > 0){ return chartYScale(d.cs137)} },
                 })
                 .style({
                     fill: "darkblue",
