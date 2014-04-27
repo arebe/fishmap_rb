@@ -68,7 +68,7 @@ var projectionMethods = [
 var actualProjectionMethod = 0
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
-var rScale = d3.scale.linear().range([2, 15])
+var rScale = d3.scale.log().range([1, 20])
 
 // slider & bar chart params
 var parseDate = d3.time.format("%m/%e/%y").parse
@@ -76,7 +76,7 @@ var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
 
 // circle transparency scales
-var fillOpScale = d3.scale.linear().range([0, 0.7])
+var fillOpScale = d3.scale.linear().range([0, 0.6])
 var strokeOpScale = d3.scale.linear().range([0, 1])
 var one_day = 1000*60*60*24   // one day in milliseconds
 fillOpScale.domain([30*one_day, 0])
@@ -142,8 +142,7 @@ function displayMap(){
         })
         .style({
             stroke: "none", 
-            // fill: "url(#mountaintile)",
-            fill: "darkolivegreen",
+            fill: "url(#mountaintile)",
             "fill-opacity": 0.6,
         })
         .on("click", clicked)
@@ -263,7 +262,6 @@ function clicked(d){
         .attr({
             transform: "translate(80, -150) scale(2.8)",
         })
-    console.log("it clicked")
 }
 
 function reset(){
@@ -274,10 +272,7 @@ function reset(){
         .attr({
             transform: "",
         })
-
-    console.log("it reset")
 }
-
 //--------------------------------------------------------------------------//
 
 
