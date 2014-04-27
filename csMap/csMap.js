@@ -9,6 +9,14 @@ var margin = {
 var width = 960 - margin.left - margin.right
 var height = 600 - margin.bottom - margin.top
 
+// zoomable area
+var zoomVis = {
+    coordinates:[134, 40] ,
+    w: 130,
+    h: 100
+}
+var active = d3.select(null)
+
 // use this for histogram vis beneath slider
 var bbVis = {
     x: margin.left, 
@@ -24,7 +32,6 @@ var svg_map = d3.select("#fishmap").append("svg")
         height: height + margin.top + margin.bottom
     })
 
-
 // give the SVG a background color
 svg_map.append("rect")
    .attr({
@@ -33,37 +40,32 @@ svg_map.append("rect")
     height: "100%",
     fill: "aliceblue",
    })
+   .on("click", reset)
 
-svg_map.append("g").attr({
+var g = svg_map.append("g").attr({
         transform: "translate(" + margin.left + "," + margin.top + ")"
     })
 
 // a variety of map projection methods
 var projectionMethods = [
-    {
-        name:"mercator",
-        method: d3.geo.mercator().translate([width / 2, height / 2])//.precision(.1);
-    },{
-        name:"equiRect",
-        method: d3.geo.equirectangular().translate([width / 2, height / 2])//.precision(.1);
-    },{
-        name:"stereo",
-        method: d3.geo.stereographic().translate([width / 2, height / 2])//.precision(.1);
-    },{
-        name:"aziumuthal equal area",
-        method: d3.geo.azimuthalEqualArea().clipAngle(180 - 1e-3).scale(237).translate([width / 2, height / 2])//.precision(.1)
-    },{
+    { // 0 -- overview -- use this and translate eq of 2
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 50, (height / 2) +200]).rotate([-180, 0]).scale(450).precision(.01)
-    },
-    {
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) - 40, (height / 2) +160]).rotate([-180, 0]).scale(480).precision(.01)
+    },{ // 1 -- overview -- looks more "normal"
         name: "equirectangular Pacific",
         method: d3.geo.equirectangular().translate([(width / 2) - 100, (height / 2) + 150]).rotate([-160, 0]).scale(400).precision(.01)
+    },{ // 2 -- zoomed -- this looks better
+        name: "aziumuthal equal area Pacific",
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2) , (height / 2) ]).rotate([-144, -34]).scale(2000).precision(.01)
+    },{ // 3 -- zoomed
+        name: "equirectangular Pacific",
+        method: d3.geo.equirectangular().translate([(width / 2), (height / 2)]).rotate([-140, -34]).scale(1800).precision(.01)
     }
+
 ]
 
 // base map parameters
-var actualProjectionMethod = 5
+var actualProjectionMethod = 0
 var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.linear().range([2, 15])
@@ -85,9 +87,6 @@ var chartXScale = d3.scale.linear().range([bbVis.x, bbVis.x + bbVis.w])
 var chartYScale = d3.scale.log().range([bbVis.y + bbVis.h, bbVis.y])
 var chartXAxis = d3.svg.axis().scale(chartXScale).orient("bottom").ticks(30)
 var chartYAxis = d3.svg.axis().scale(chartYScale).orient("right").ticks(10)
-
-// interaction states
-var show_timeline = 0
 
 // tooltips
 //--from http://bl.ocks.org/Caged/6476579 ----------------//
@@ -132,7 +131,7 @@ function displayMap(){
             height: 575,
             "xlink:href": "../images/mountaintile.jpg",
         })
-    var coastline = svg_map.append("g")
+    var coastline = g.append("g")
         .attr("id", "coastline")
         .selectAll("path")
         .data(worldCoasts)
@@ -143,11 +142,13 @@ function displayMap(){
         })
         .style({
             stroke: "none", 
-            fill: "url(#mountaintile)",
+            // fill: "url(#mountaintile)",
+            fill: "darkolivegreen",
             "fill-opacity": 0.6,
         })
+        .on("click", clicked)
     // country administrative borders
-    var countries = svg_map.append("g")
+    var countries = g.append("g")
         .attr("id", "countries")
         .selectAll("path")
         .data(worldCountries)
@@ -163,7 +164,7 @@ function displayMap(){
         })
         
     // city markers
-    var cities = svg_map.append("g")
+    var cities = g.append("g")
         .attr("id", "cities")
         .selectAll("circle")
         .data(worldCities)
@@ -187,7 +188,7 @@ function displayMap(){
         })
 
     // city names
-    var city_labels = svg_map.append("g")
+    var city_labels = g.append("g")
         .attr("id", "city_labels")
         .selectAll("text")
         .data(worldCities)
@@ -216,30 +217,69 @@ function displayMap(){
         })
 
     // bounding box for zoomable area around Japan
-    var zoom_box = svg_map.append("g")
+    var zoom_box = g.append("g")
         .attr("id", "zoom_box")
         .append("rect")
         .attr({
-            x: 150,
-            y: 120,
-            width: 130,
-            height: 100,
+            x: projection(zoomVis.coordinates)[0],
+            y: projection(zoomVis.coordinates)[1],
+            width: zoomVis.w,
+            height: zoomVis.h,
+            d: path_map,
         })
         .style({
-            fill: "yellow",
+            fill: "ghostwhite",
             "fill-opacity": 0.3,
-            stroke: "red",
+            stroke: "#1A1A1E",
+            "stroke-opacity": 0.75,
+            visibility: function(){ if(active.node() === this){ return "hidden"} else {return "visible"}},
         })
-        .append("text")
+        .on("click", clicked)
+    var zoom_label = g.append("g").append("text")
         .attr({
-            x: 0,
-            y: 0,
+            x: projection(zoomVis.coordinates)[0],
+            y: projection(zoomVis.coordinates)[1] + zoomVis.h,
+            dx: 2,
+            dy: 11,
         })
-        .style("text-anchor", "start")
+        .style({
+            "text-anchor": "start",
+            fill: "#1A1A1E",
+            "fill-opacity":0.6,
+        })
         .text("click to zoom")
 
     loadData()
 }
+
+// zooming functions adapted from http://bl.ocks.org/mbostock/4699541 ------//
+// zoom to bounded area
+function clicked(d){
+    if(active.node() === this) { return reset() }
+    active.classed("active", false)
+    active = d3.select(this).classed("active", true)
+    g.transition()
+        .duration(750)
+        .attr({
+            transform: "translate(80, -150) scale(2.8)",
+        })
+    console.log("it clicked")
+}
+
+function reset(){
+    active.classed("active", false)
+    active = d3.select(null)
+    g.transition()
+        .duration(750)
+        .attr({
+            transform: "",
+        })
+
+    console.log("it reset")
+}
+
+//--------------------------------------------------------------------------//
+
 
 // cesium data loaded into an array
 var csData = []
@@ -298,7 +338,7 @@ function loadData(){
 }
 
 function drawCircles(data){
-    var readings = svg_map.append("g")
+    var readings = g.append("g")
         .attr("id", "readings")
         .selectAll("circle")
         .data(data)
@@ -323,7 +363,7 @@ function drawCircles(data){
 }
 
 function drawFukushima(){
-    var fukushima = svg_map.append("g")
+    var fukushima = g.append("g")
         .attr("id", "fukushima")
         .append("circle")
         .attr({
@@ -337,7 +377,7 @@ function drawFukushima(){
         })
     //-- concentric circles emanating from a point from: http://bl.ocks.org/mbostock/4503672
     setInterval(function(){
-        svg_map.append("circle")
+        g.append("circle")
            .attr({
             class: "ring",
             transform: "translate(" + fukushimaCoord + ")",
@@ -438,7 +478,7 @@ function drawChart(data){
                     height: bbVis.h,
                 })
                 .style({
-                    fill: "aliceblue",
+                    fill: "ghostwhite",
                     stroke: "darkolivegreen"                    
                 })
 

@@ -13,6 +13,11 @@ table{
     border:none;
 }
 
+/* zoom area */
+.active rect {
+  fill: orange;
+}
+
 /* chart axes */
 .chart_axis text {
     font: 10px sans-serif;
@@ -30,7 +35,6 @@ table{
     stroke: #000;
     shape-rendering: crispEdges;
 }
-
 
 /* slider */
 /* from http://bl.ocks.org/mbostock/6452972 */
