@@ -215,13 +215,29 @@ function displayMap(){
             "text-anchor": "end",
         })
 
-    // label projection on map
-    var textLabel = svg_map.append("text")
-          .text(projectionMethods[actualProjectionMethod].name)
-          .attr({
-            "transform":"translate(-40,-30)"
-          })
-          .style("fill", "white")
+    // bounding box for zoomable area around Japan
+    var zoom_box = svg_map.append("g")
+        .attr("id", "zoom_box")
+        .append("rect")
+        .attr({
+            x: 150,
+            y: 120,
+            width: 130,
+            height: 100,
+        })
+        .style({
+            fill: "yellow",
+            "fill-opacity": 0.3,
+            stroke: "red",
+        })
+        .append("text")
+        .attr({
+            x: 0,
+            y: 0,
+        })
+        .style("text-anchor", "start")
+        .text("click to zoom")
+
     loadData()
 }
 
@@ -464,7 +480,7 @@ function drawChart(data){
     // X Axis Title
     svg_map.append("text")
         .attr({
-            class: "x_title",
+            class: "chart_title",
             x: bbVis.x + bbVis.w,
             y: bbVis.y + bbVis.h,
             dx: "-0.4em",
@@ -472,18 +488,22 @@ function drawChart(data){
         })
         .style("text-anchor", "end")
         .text("Distance from Fukushima (km)")
-    // Y Axis & Title
+    // Y Axis
     svg_map.append("g")
         .attr({
             class: "chart_axis",
             transform: "translate(" + (bbVis.x + bbVis.w )+ ",0)",
         })
         .call(chartYAxis)
-        .append("text")
+    // Y Axis Title
+    svg_map.append("text")
         .attr({
+            class: "chart_title",
             transform: "rotate(-90)",
-            // y: 100,
-            x: -bbVis.y,
+            x: -(bbVis.y),
+            y: bbVis.x + bbVis.w,
+            // x: bbVis.y + bbVis.h,
+            // y: bbVis.x + bbVis.w,            
             dx: "-0.5em",
             dy: "-0.5em",
         })
