@@ -132,12 +132,13 @@ function displayMap(){
             "xlink:href": "../images/mountaintile.jpg",
         })
     var coastline = g.append("g")
-        .attr("id", "coastline")
+        .attr("id", "coastlines")
         .selectAll("path")
         .data(worldCoasts)
         .enter()
         .append("path")
         .attr({
+            class: "coastline",
             d: path_map,
         })
         .style({
@@ -153,6 +154,7 @@ function displayMap(){
         .enter()
         .append("path")
         .attr({
+            class: "country",
             d: path_map,
         })
         .style({
@@ -172,6 +174,7 @@ function displayMap(){
             return d.properties.SCALERANK <=1
         })
         .attr({
+            class: "city",
             transform: function(d){
                 return "translate(" + projection(d.geometry.coordinates) + ")"
             },
@@ -199,6 +202,7 @@ function displayMap(){
             return d.properties.NAME
         })
         .attr({
+            class: "city_label",
             transform: function(d){
                 return "translate(" + projection(d.geometry.coordinates) + ")"
             },
@@ -230,11 +234,11 @@ function displayMap(){
             "fill-opacity": 0.3,
             stroke: "#1A1A1E",
             "stroke-opacity": 0.75,
-            // visibility: function(){ if(actualProjectionMethod===2){ return "hidden"} else {return "visible"}},
         })
         .on("click", update)
     var zoom_label = g.append("g").append("text")
         .attr({
+            id: "zoom_label",
             x: projection(zoomVis.coordinates)[0],
             y: projection(zoomVis.coordinates)[1] + zoomVis.h,
             dx: 2,
@@ -251,12 +255,37 @@ function displayMap(){
 }
 
 function update() {
+    // toggle projection method
     if(actualProjectionMethod===0){
         actualProjectionMethod = 2
         console.log("changed proj method: ", actualProjectionMethod)
     }
-    path_map= d3.geo.path().projection(projectionMethods[actualProjectionMethod].method)
-    svg_map.selectAll("path").transition().duration(750).attr("d",path_map)
+    else if(actualProjectionMethod===2){
+        actualProjectionMethod = 0
+        console.log("changed proj method: ", actualProjectionMethod)
+    }
+    // update projection & path
+    projection =  projectionMethods[actualProjectionMethod].method
+    path_map= d3.geo.path().projection(projection)
+    // update DOM elements
+    svg_map.selectAll(".coastline, .country").transition().duration(750).attr("d",path_map)
+    svg_map.selectAll(".city, .city_label")
+        .transition().duration(750)
+        .attr("transform", function(d){
+                return "translate(" + projection(d.geometry.coordinates) + ")"
+            })
+    svg_map.selectAll(".reading")
+        .transition().duration(750)
+        .attr("transform", function(d){
+                return "translate(" + projection(d.coordinates) + ")"
+            })
+    svg_map.selectAll(".fukushima_point")
+        .transition().duration(750)
+        .attr("transform", "translate(" + projection(fukushimaCoord) + ")")
+    // hide zoom box
+    svg_map.selectAll("#zoom_box, #zoom_label")
+           .transition().duration(750)
+           .style("visibility", "hidden")
 
 }
 
@@ -265,43 +294,33 @@ function reset(){
         actualProjectionMethod = 0
         console.log("changed proj method: ", actualProjectionMethod)
     }
-    path_map= d3.geo.path().projection(projectionMethods[actualProjectionMethod].method)
-    svg_map.selectAll("path").transition().duration(750).attr("d",path_map)
+    // update projection & path
+    projection =  projectionMethods[actualProjectionMethod].method
+    path_map= d3.geo.path().projection(projection)
+    // update DOM elements
+    svg_map.selectAll(".coastline, .country").transition().duration(750).attr("d",path_map)
+    svg_map.selectAll(".city, .city_label")
+        .transition().duration(750)
+        .attr("transform", function(d){
+                return "translate(" + projection(d.geometry.coordinates) + ")"
+            })
+    svg_map.selectAll(".reading")
+        .transition().duration(750)
+        .attr("transform", function(d){
+                return "translate(" + projection(d.coordinates) + ")"
+            })
+    svg_map.selectAll(".fukushima_point")
+        .transition().duration(750)
+        .attr("transform", "translate(" + projection(fukushimaCoord) + ")")
+    // show zoom box
+    svg_map.selectAll("#zoom_box, #zoom_label")
+           .transition().duration(750)
+           .style("visibility", "visible")
 }
-
-
-//--------------------------------------------------------------------------//
-
-// geometric zoom
-// zooming functions adapted from http://bl.ocks.org/mbostock/4699541 ------//
-// zoom to bounded area
-// function clicked(d){
-//     if(active.node() === this) { return reset() }
-//     active.classed("active", false)
-//     active = d3.select(this).classed("active", true)
-//     g.transition()
-//         .duration(750)
-//         .attr({
-//             transform: "translate(80, -150) scale(2.8)",
-//         })
-// }
-
-// function reset(){
-//     active.classed("active", false)
-//     active = d3.select(null)
-//     g.transition()
-//         .duration(750)
-//         .attr({
-//             transform: "",
-//         })
-// }
-//--------------------------------------------------------------------------//
-
 
 // cesium data loaded into an array
 var csData = []
-var fukushimaLongLat = [141.0329, 37.4230]
-var fukushimaCoord = projection(fukushimaLongLat)
+var fukushimaCoord = [141.0329, 37.4230]
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
@@ -310,7 +329,7 @@ function loadData(){
             // console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
             csData.push({
                 source: d['source'],
-                coordinates: projection([d.coordinates[0], d.coordinates[1]]),
+                coordinates: [d.coordinates[0], d.coordinates[1]],
                 cs134: parseFloat(d['cs134'].replace(/,/g,'')),
                 cs137: parseFloat(d['cs137'].replace(/,/g,'')),
                 date: parseDate(d['date']),
@@ -365,7 +384,7 @@ function drawCircles(data){
         .attr("class", "reading")
         .attr({
             transform: function(d){
-                return "translate(" + d.coordinates + ")"
+                return "translate(" + projection(d.coordinates) + ")"
             },
             r: function(d){ return rScale(d.cs137) },
         })
@@ -384,7 +403,8 @@ function drawFukushima(){
         .attr("id", "fukushima")
         .append("circle")
         .attr({
-            transform: "translate(" + fukushimaCoord + ")",
+            class: "fukushima_point",
+            transform: "translate(" + projection(fukushimaCoord) + ")",
             r: "3",
         })
         .style({
@@ -397,7 +417,7 @@ function drawFukushima(){
         g.append("circle")
            .attr({
             class: "ring",
-            transform: "translate(" + fukushimaCoord + ")",
+            transform: "translate(" + projection(fukushimaCoord) + ")",
             r: "10",
            })
            .style({
@@ -572,11 +592,11 @@ function drawChart(data){
 //-- adapted from https://groups.google.com/forum/#!topic/d3-js/0p7LuNHpEbM---//
 function calcDist (cC) {
     // origin point: fukushimaLongLat
-    var dLatRad = Math.abs(fukushimaLongLat[1] - cC[1]) * Math.PI/180
-    var dLonRad = Math.abs(fukushimaLongLat[0] - cC[0]) * Math.PI/180
+    var dLatRad = Math.abs(fukushimaCoord[1] - cC[1]) * Math.PI/180
+    var dLonRad = Math.abs(fukushimaCoord[0] - cC[0]) * Math.PI/180
     // Calculate origin in Radians
-    var lat1Rad = fukushimaLongLat[1] * Math.PI/180
-    var lon1Rad = fukushimaLongLat[0] * Math.PI/180
+    var lat1Rad = fukushimaCoord[1] * Math.PI/180
+    var lon1Rad = fukushimaCoord[0] * Math.PI/180
     // Calculate new point in Radians
     var lat2Rad = cC[1] * Math.PI/180
     var lon2Rad = cC[0] * Math.PI/180
