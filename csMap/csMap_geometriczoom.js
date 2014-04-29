@@ -145,6 +145,7 @@ function displayMap(){
             fill: "url(#mountaintile)",
             "fill-opacity": 0.6,
         })
+        .on("click", clicked)
     // country administrative borders
     var countries = g.append("g")
         .attr("id", "countries")
@@ -230,9 +231,9 @@ function displayMap(){
             "fill-opacity": 0.3,
             stroke: "#1A1A1E",
             "stroke-opacity": 0.75,
-            // visibility: function(){ if(actualProjectionMethod===2){ return "hidden"} else {return "visible"}},
+            visibility: function(){ if(active.node() === this){ return "hidden"} else {return "visible"}},
         })
-        .on("click", update)
+        .on("click", clicked)
     var zoom_label = g.append("g").append("text")
         .attr({
             x: projection(zoomVis.coordinates)[0],
@@ -250,51 +251,28 @@ function displayMap(){
     loadData()
 }
 
-function update() {
-    if(actualProjectionMethod===0){
-        actualProjectionMethod = 2
-        console.log("changed proj method: ", actualProjectionMethod)
-    }
-    path_map= d3.geo.path().projection(projectionMethods[actualProjectionMethod].method)
-    svg_map.selectAll("path").transition().duration(750).attr("d",path_map)
-
+// zooming functions adapted from http://bl.ocks.org/mbostock/4699541 ------//
+// zoom to bounded area
+function clicked(d){
+    if(active.node() === this) { return reset() }
+    active.classed("active", false)
+    active = d3.select(this).classed("active", true)
+    g.transition()
+        .duration(750)
+        .attr({
+            transform: "translate(80, -150) scale(2.8)",
+        })
 }
 
 function reset(){
-    if(actualProjectionMethod===2){
-        actualProjectionMethod = 0
-        console.log("changed proj method: ", actualProjectionMethod)
-    }
-    path_map= d3.geo.path().projection(projectionMethods[actualProjectionMethod].method)
-    svg_map.selectAll("path").transition().duration(750).attr("d",path_map)
+    active.classed("active", false)
+    active = d3.select(null)
+    g.transition()
+        .duration(750)
+        .attr({
+            transform: "",
+        })
 }
-
-
-//--------------------------------------------------------------------------//
-
-// geometric zoom
-// zooming functions adapted from http://bl.ocks.org/mbostock/4699541 ------//
-// zoom to bounded area
-// function clicked(d){
-//     if(active.node() === this) { return reset() }
-//     active.classed("active", false)
-//     active = d3.select(this).classed("active", true)
-//     g.transition()
-//         .duration(750)
-//         .attr({
-//             transform: "translate(80, -150) scale(2.8)",
-//         })
-// }
-
-// function reset(){
-//     active.classed("active", false)
-//     active = d3.select(null)
-//     g.transition()
-//         .duration(750)
-//         .attr({
-//             transform: "",
-//         })
-// }
 //--------------------------------------------------------------------------//
 
 
