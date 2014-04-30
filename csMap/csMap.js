@@ -56,8 +56,8 @@ var projectionMethods = [
         method: d3.geo.equirectangular().translate([(width / 2) - 100, (height / 2) + 150]).rotate([-160, 0]).scale(400).precision(.01)
     },{ // 2 -- zoomed -- this looks better
         name: "aziumuthal equal area Pacific",
-        method: d3.geo.azimuthalEqualArea().translate([(width / 2) , (height / 2) ]).rotate([-144, -34]).scale(2000).precision(.01)
-    },{ // 3 -- zoomed
+        method: d3.geo.azimuthalEqualArea().translate([(width / 2), (height / 2) ]).rotate([-142, -33]).scale(3000).precision(.01)
+    },{ // 3 -- zoomed -- not as good
         name: "equirectangular Pacific",
         method: d3.geo.equirectangular().translate([(width / 2), (height / 2)]).rotate([-140, -34]).scale(1800).precision(.01)
     }
@@ -70,7 +70,7 @@ var projection =  projectionMethods[actualProjectionMethod].method
 var path_map = d3.geo.path().projection(projection)
 var rScale = d3.scale.log().range([1, 15])
 
-// slider & bar chart params
+// slider params
 var parseDate = d3.time.format("%m/%e/%y").parse
 var formatDate = d3.time.format("%b %Y")
 var slider_x = d3.time.scale().range([0, width]).clamp(true)
@@ -86,8 +86,14 @@ strokeOpScale.domain([90*one_day, 0])
 var chartXScale = d3.scale.linear().range([bbVis.x, bbVis.x + bbVis.w])
 var chartYScale = d3.scale.log().range([bbVis.y + bbVis.h, bbVis.y])
 var chartXAxis = d3.svg.axis().scale(chartXScale).orient("bottom").ticks(30)
-var chartYAxis = d3.svg.axis().scale(chartYScale).orient("right").ticks(10)
-
+var yAxisFormat = d3.format("g")
+var chartYAxis = d3.svg.axis()
+    .scale(chartYScale)
+    .orient("right")
+    .ticks(5)
+    .tickValues([1, 10, 100, 1000, 10000])
+    .tickFormat(yAxisFormat)
+    
 // tooltips
 //--from http://bl.ocks.org/Caged/6476579 ----------------//
 var tip = d3.tip()
@@ -258,11 +264,9 @@ function update() {
     // toggle projection method
     if(actualProjectionMethod===0){
         actualProjectionMethod = 2
-        console.log("changed proj method: ", actualProjectionMethod)
     }
     else if(actualProjectionMethod===2){
         actualProjectionMethod = 0
-        console.log("changed proj method: ", actualProjectionMethod)
     }
     // update projection & path
     projection =  projectionMethods[actualProjectionMethod].method
@@ -292,7 +296,6 @@ function update() {
 function reset(){
     if(actualProjectionMethod===2){
         actualProjectionMethod = 0
-        console.log("changed proj method: ", actualProjectionMethod)
     }
     // update projection & path
     projection =  projectionMethods[actualProjectionMethod].method
@@ -324,9 +327,8 @@ var fukushimaCoord = [141.0329, 37.4230]
 
 function loadData(){
     d3.json("../data/allCsData.json", function(error, data){
-        // this is super janky - need to find a better solution than all these parseFloats..
+        // create js object with the data
         data.forEach(function(d){
-            // console.log("cs137: ", parseFloat(d['cs137'].replace(/,/g,'')))
             csData.push({
                 source: d['source'],
                 coordinates: [d.coordinates[0], d.coordinates[1]],
@@ -337,34 +339,20 @@ function loadData(){
                 salinity: d['salinity'],
                 depth: d['depth'],
                 fukushimaDistance: calcDist([d.coordinates[0], d.coordinates[1]]),
+                csRatio: 0,
             })
         })
-        // calculate max and min values for scales
-        var cs137Min = 1
-        var cs137Max = 0
-        var fDistMin = 1 
-        var fDistMax = 0
         csData.map(function(d){
-            if(parseFloat(d.cs137) < cs137Min){
-                cs137Min = parseFloat(d.cs137)
-            }
-            if(parseFloat(d.cs137) > cs137Max){
-                cs137Max = parseFloat(d.cs137)
-            }
-            if(parseFloat(d.fukushimaDistance) < fDistMin){
-                fDistMin = parseFloat(d.fukushimaDistance)
-            }
-            if(parseFloat(d.fukushimaDistance) > fDistMax){
-                fDistMax = parseFloat(d.fukushimaDistance)
-            }
+            d.csRatio = parseFloat(d.cs137/d.cs134)
+            console.log("cs ratio: ", d.csRatio)
         })
         // update circle radius scale
-        rScale.domain([cs137Min, cs137Max])
+        rScale.domain(d3.extent(csData, function(d){return d.cs137}))
         // update slider scale
         slider_x.domain(d3.extent(csData, function(d){ return d.date }))
         // update chart scales
-        chartXScale.domain([fDistMin, fDistMax]).clamp(true).nice()
-        chartYScale.domain([cs137Min, cs137Max]).clamp(true).nice()
+        chartXScale.domain(d3.extent(csData, function(d){return d.cs137 })).clamp(true).nice()
+        chartYScale.domain(d3.extent(csData, function(d){return d.fukushimaDistance})).clamp(true).nice()
         // once everything's loaded...display data on map
         drawCircles(csData)
         drawFukushima()
